@@ -1,8 +1,11 @@
 package ru.bsh.breaker;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 public class CircuitBreaker {
 
     public enum State {
@@ -24,25 +27,25 @@ public class CircuitBreaker {
     public Boolean allowRequest() {
         var currentState = state.get();
 
-        if (currentState == State.CLOSED) {
-            return true;
-        }
-
-        if (currentState == State.OPEN) {
-            var now = System.currentTimeMillis();
-            if (now - lastFailureTime >= timeoutMs) {
-                if (state.compareAndSet(State.OPEN, State.HALF_OPEN)) {
-                    return true;
-                }
+        switch (currentState) {
+            case CLOSED -> {
+                return true;
             }
-            return false;
+            case OPEN -> {
+                var now = System.currentTimeMillis();
+                if (now - lastFailureTime >= timeoutMs) {
+                    return state.compareAndSet(State.OPEN, State.HALF_OPEN);
+                }
+                return false;
+            }
+            case HALF_OPEN -> {
+                return false;
+            }
+            default -> {
+                log.error("Получено неизвестное состояние в Circuit Breaker");
+                return false;
+            }
         }
-
-        if (currentState == State.HALF_OPEN) {
-            return false;
-        }
-
-        return false;
     }
 
     public void onSuccess() {

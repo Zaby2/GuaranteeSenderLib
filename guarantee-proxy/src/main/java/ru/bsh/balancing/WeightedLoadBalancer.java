@@ -19,7 +19,7 @@ public class WeightedLoadBalancer implements Balancer {
 
     @Override
     public BalancingProvider choose() {
-        var openStatesNames = manager.getCircuitBreakersByName().entrySet().stream()
+        var openStatesNames = manager.circuitBreakersByName().entrySet().stream()
                 .filter(entry -> entry.getValue().allowRequest())
                 .map(Map.Entry::getKey)
                 .toList();

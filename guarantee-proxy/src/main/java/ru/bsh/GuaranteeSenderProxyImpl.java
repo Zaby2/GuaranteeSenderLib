@@ -48,24 +48,18 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
     @Override
     public void send(T request) {
         var dtoToSend = converter.convert(request);
-        var isSend =  false;
-        try {
-            while (!isSend) {
-                var selectedProvider = balancer.choose();
-                if (Objects.isNull(selectedProvider)) {
-                    throw new RuntimeException("Для главной группы не найдено доступного маршрута");
-                }
-                try {
-                    circuitBreakerManager.callWithCircuitBreaker(selectedProvider,
-                            sender -> sender.send(dtoToSend));
-                    isSend = true;
-                } catch (Exception e) {
-                    log.error("Ошибка отпрвки в главной группе для provider {}", selectedProvider.getName());
-                }
+
+        var selectedProvider = balancer.choose();
+        while (Objects.nonNull(selectedProvider)) {
+            try {
+                circuitBreakerManager.callWithCircuitBreaker(selectedProvider,
+                        sender -> sender.send(dtoToSend));
+                log.info("Запрос успешно отправлен через главную группу транспорта {}", selectedProvider);
+                break;
+            } catch (Exception e) {
+                log.error("Ошибка отпрвки в главной группе для provider {}", selectedProvider.getName());
+                selectedProvider = balancer.choose();
             }
-        } catch (Exception e) {
-            log.error("Отправка через главную группу невозможна");
-            // call method to buffer sender
         }
     }
 }

@@ -20,7 +20,7 @@ public class HttpSender implements GuaranteeSender {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public HttpSender(HttpSenderConfiguration configuration, RetryTemplate retryTemplate) {
+    public HttpSender(HttpSenderConfiguration configuration) {
         this.configuration = configuration;
         this.retryTemplate = buildRetryTemplate(configuration.getRetryConfiguration());
     }
