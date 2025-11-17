@@ -8,8 +8,9 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.RestTemplate;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
+import ru.bsh.guarantee.exception.InternalGuaranteeException;
 import ru.bsh.guarantee.sender.GuaranteeSender;
-import ru.bsh.guarantee.sender.configuration.HttpSenderConfiguration;
+import ru.bsh.guarantee.sender.configuration.http.HttpSenderConfiguration;
 import ru.bsh.guarantee.sender.configuration.retry.RetryConfiguration;
 
 public class HttpSender implements GuaranteeSender {
@@ -31,7 +32,8 @@ public class HttpSender implements GuaranteeSender {
         try {
             clazz = Class.forName(dataToSend.getRequestType());
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new InternalGuaranteeException(String.format("Ошибка преобразования объекта для отпарвки через http %s",
+                    e.getMessage()));
         }
         Object playLoad;
         try {

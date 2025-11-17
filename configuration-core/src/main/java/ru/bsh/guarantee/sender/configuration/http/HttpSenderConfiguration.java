@@ -1,4 +1,4 @@
-package ru.bsh.guarantee.sender.configuration;
+package ru.bsh.guarantee.sender.configuration.http;
 
 import lombok.Data;
 import org.springframework.http.HttpHeaders;
@@ -10,5 +10,4 @@ public class HttpSenderConfiguration {
     private String url;
     private HttpHeaders headers;
     private RetryConfiguration retryConfiguration;
-
 }
