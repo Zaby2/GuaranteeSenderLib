@@ -1,6 +1,8 @@
 package ru.bsh.guarantee.sender.impl.sql;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 import ru.bsh.guarantee.converter.GuaranteeSenderDtoToEntityConverter;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
 import ru.bsh.guarantee.exception.InternalGuaranteeException;
@@ -13,6 +15,8 @@ import java.util.List;
 import java.util.Objects;
 
 @Slf4j
+@Service
+@ConditionalOnProperty(name = "guarantee.sql.enabled", havingValue = "true")
 public class SqlSender implements GuaranteeSender {
 
     private final List<String> destinations;
@@ -27,11 +31,21 @@ public class SqlSender implements GuaranteeSender {
 
     @Override
     public void send(GuaranteeSenderDto dataToSend) {
-        try {
-            repository.save(Objects.requireNonNull(converter.convert(dataToSend)));
-            log.info("Отпарвка в SQL БД {} завершилась успешно", DbContext.get());
-        } catch (Exception e) {
-            throw new InternalGuaranteeException(String.format("Ошибка отправки в SQL БД %s", e.getMessage()));
+        var isSend = false;
+        for (var destination : destinations) {
+            DbContext.set(destination);
+            try {
+                repository.save(Objects.requireNonNull(converter.convert(dataToSend)));
+                isSend = true;
+                log.info("Отпарвка в SQL БД {} завершилась успешно", DbContext.get());
+                break;
+            } catch (Exception e) {
+                log.error("Ошибка отправки в SQL БД {}, БД {}", e.getMessage(), DbContext.get());
+            }
+        }
+        if (!isSend) {
+            DbContext.clear();
+            throw new InternalGuaranteeException("Ошибка отправки через SQL транспорт");
         }
     }
 }

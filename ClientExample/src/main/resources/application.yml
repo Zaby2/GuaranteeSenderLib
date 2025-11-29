@@ -1,0 +1,9 @@
+guarantee:
+  nosql:
+    enabled: false
+  sql:
+    enabled: false
+management:
+  health:
+    mongo:
+      enabled: false

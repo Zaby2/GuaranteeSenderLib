@@ -12,9 +12,9 @@
 
     <dependencies>
         <dependency>
-        <groupId>ru.bsh.guarantee</groupId>
-        <artifactId>configuration-core</artifactId>
-        <version>1.0-SNAPSHOT</version>
-    </dependency>
+            <groupId>ru.bsh.guarantee</groupId>
+            <artifactId>configuration-core</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
