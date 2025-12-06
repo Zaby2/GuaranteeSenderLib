@@ -21,7 +21,7 @@ public record CircuitBreakerManager(Map<String, CircuitBreaker> circuitBreakersB
             cb.onSuccess();
         } catch (Exception e) {
             cb.onFailure();
-            throw new RuntimeException(e);
+            throw new InternalGuaranteeException(e.getMessage());
         }
     }
 

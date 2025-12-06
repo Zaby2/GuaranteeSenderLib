@@ -1,5 +1,6 @@
 package ru.bsh.balancing;
 
+import lombok.RequiredArgsConstructor;
 import ru.bsh.breaker.CircuitBreakerManager;
 import ru.bsh.guarantee.balancing.BalancingProvider;
 
@@ -7,15 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+@RequiredArgsConstructor
 public class WeightedLoadBalancer implements Balancer {
 
     private final List<BalancingProvider> providers;
     private final CircuitBreakerManager manager;
-
-    public WeightedLoadBalancer(List<BalancingProvider> providers, CircuitBreakerManager manager) {
-        this.providers = providers;
-        this.manager = manager;
-    }
 
     @Override
     public BalancingProvider choose() {

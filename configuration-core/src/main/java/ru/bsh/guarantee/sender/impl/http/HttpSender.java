@@ -2,10 +2,12 @@ package ru.bsh.guarantee.sender.impl.http;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
 import ru.bsh.guarantee.exception.InternalGuaranteeException;
@@ -13,6 +15,8 @@ import ru.bsh.guarantee.sender.GuaranteeSender;
 import ru.bsh.guarantee.sender.configuration.http.HttpSenderConfiguration;
 import ru.bsh.guarantee.sender.configuration.retry.RetryConfiguration;
 
+@Service
+@Slf4j
 public class HttpSender implements GuaranteeSender {
 
     private final HttpSenderConfiguration configuration;
@@ -39,7 +43,7 @@ public class HttpSender implements GuaranteeSender {
         try {
             playLoad = objectMapper.readValue(dataToSend.getRequestValue(), clazz);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new InternalGuaranteeException(e.getMessage());
         }
         HttpEntity requestEntity;
         if (configuration.getHeaders() == null) {
@@ -47,8 +51,14 @@ public class HttpSender implements GuaranteeSender {
         } else {
             requestEntity = new HttpEntity<>(playLoad, configuration.getHeaders());
         }
-        retryTemplate.execute(context ->
-                restTemplate.postForEntity(configuration.getUrl(), requestEntity, Void.class));
+        try {
+            retryTemplate.execute(context ->
+                    restTemplate.postForEntity(configuration.getUrl(), requestEntity, Void.class));
+        } catch (Exception e) {
+            throw new InternalGuaranteeException(
+                    String.format("Ошибка отправки через Http транспорт %s", e.getMessage()));
+        }
+
     }
 
     private RetryTemplate buildRetryTemplate(RetryConfiguration configuration) {

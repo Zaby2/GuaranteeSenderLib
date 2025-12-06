@@ -2,6 +2,7 @@ package ru.bsh.guarantee.balancing;
 
 
 import lombok.Data;
+import ru.bsh.guarantee.dto.BufferType;
 
 import java.util.List;
 
@@ -10,5 +11,5 @@ public class BalancingGroupConfiguration {
 
     private String name;
     private List<BalancingProvider> provider;
-    private Boolean isMain;
+    private BufferType type;
 }

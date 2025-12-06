@@ -3,7 +3,16 @@ guarantee:
     enabled: false
   sql:
     enabled: false
-management:
-  health:
-    mongo:
-      enabled: false
+  kafka:
+    enabled: false
+http:
+  url: test1
+  headersMap:
+    Accept: "application/json"
+  retryConfiguration:
+    exceptionsMap:
+      java.lang.NullPointerException: true
+    maxAttempts: 5
+    initialInterval: 5
+    intervalMultiplier: 5
+    maxInterval: 100
