@@ -4,6 +4,8 @@ import org.springframework.core.convert.converter.Converter;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
 import ru.bsh.guarantee.entity.SqlGuaranteeEntity;
 
+import java.util.Date;
+
 public class GuaranteeSenderDtoToEntityConverter implements
         Converter<GuaranteeSenderDto, SqlGuaranteeEntity> {
 
@@ -13,6 +15,9 @@ public class GuaranteeSenderDtoToEntityConverter implements
         result.setSignature(source.getSignature());
         result.setRequestType(source.getRequestType());
         result.setRequestValue(source.getRequestValue());
+        result.setCreatedAt(source.getCreatedAt() == null ? new Date() : source.getCreatedAt());
+        result.setPolledAt(source.getPolledAt() == null ? new Date() : source.getPolledAt());
+        result.setIsSent(Boolean.FALSE);
         return result;
     }
 }

@@ -23,7 +23,7 @@ public class SignatureService {
             sig.update(bytes);
             return Base64.getEncoder().encodeToString(sig.sign());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return "";
         }
     }
 

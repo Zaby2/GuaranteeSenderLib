@@ -61,7 +61,10 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
     @Override
     public void send(T request) {
         var dtoToSend = converter.convert(request);
+        send(dtoToSend);
+    }
 
+    public void send(GuaranteeSenderDto dtoToSend) {
         var selectedProvider = balancer.choose();
         var isSend = false;
         while (Objects.nonNull(selectedProvider)) {
