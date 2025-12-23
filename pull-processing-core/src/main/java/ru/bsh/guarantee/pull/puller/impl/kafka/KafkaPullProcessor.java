@@ -1,15 +1,13 @@
 package ru.bsh.guarantee.pull.puller.impl.kafka;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ru.bsh.GuaranteeSenderProxyImpl;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
-import ru.bsh.guarantee.exception.InternalGuaranteeException;
 import ru.bsh.guarantee.pull.puller.PullProcessor;
 import service.SignatureService;
 
@@ -17,12 +15,15 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static ru.bsh.guarantee.pull.utils.Utils.verifySignature;
+
 @Component
 @Slf4j
 @ConditionalOnProperty(value = "guarantee.kafka.enabled", havingValue = "true")
 public class KafkaPullProcessor implements PullProcessor {
 
-    private String topic; // todo @Value
+    @Value("${kafka.puller.topic}")
+    private String topic;
 
     private final KafkaConsumer<String, GuaranteeSenderDto> kafkaConsumer;
     private final GuaranteeSenderProxyImpl<?> proxy;
@@ -35,7 +36,7 @@ public class KafkaPullProcessor implements PullProcessor {
         this.kafkaConsumer = kafkaConsumer;
         this.proxy = proxy;
         this.signatureService = signatureService;
-        kafkaConsumer.subscribe(Collections.singletonList(topic));
+        this.kafkaConsumer.subscribe(Collections.singletonList(topic));
     }
 
     @Override
@@ -53,7 +54,7 @@ public class KafkaPullProcessor implements PullProcessor {
             records.forEach(r -> {
                 log.info("KafkaPullProcessor обрабатывает запись с key = {}", r.key());
                 var dataToResend = r.value();
-                if (verifySignature(dataToResend)) {
+                if (verifySignature(signatureService, dataToResend)) {
                     log.info("Запись с key = {} прошла проверку ЭЦП", r.key());
                     proxy.send(dataToResend);
                 } else {
@@ -65,23 +66,6 @@ public class KafkaPullProcessor implements PullProcessor {
             log.error("Повторная дооотправка записи не удалась, проверьте доступность транспортов");
         } finally {
             lock.unlock();
-        }
-    }
-
-    private Boolean verifySignature(GuaranteeSenderDto dto) {
-        var objectMapper = new ObjectMapper();
-        String stringData;
-        try {
-            stringData = objectMapper.writeValueAsString(dto);
-        } catch (JsonProcessingException e) {
-            throw new InternalGuaranteeException(
-                    String.format("Ошибка преобразования в строку при подписании %s", e.getMessage())
-            );
-        }
-        try {
-            return signatureService.verify(stringData, dto.getSignature());
-        } catch (Exception e) {
-            throw new InternalGuaranteeException(e.getMessage());
         }
     }
 }

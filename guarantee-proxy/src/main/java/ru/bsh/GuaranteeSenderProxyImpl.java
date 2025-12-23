@@ -19,6 +19,9 @@ import ru.bsh.guarantee.exception.InternalGuaranteeException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +34,7 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
     private final Balancer balancer;
     private final CircuitBreakerManager circuitBreakerManager;
 
+    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
     private final GuaranteeSenderDtoConverter<T> converter = new GuaranteeSenderDtoConverter<>();
 
     public GuaranteeSenderProxyImpl(GuaranteeSenderConfiguration configuration) {
@@ -65,6 +69,10 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
     }
 
     public void send(GuaranteeSenderDto dtoToSend) {
+        CompletableFuture.runAsync(() -> sendByRest(dtoToSend), executorService);
+    }
+
+    private void sendByRest(GuaranteeSenderDto dtoToSend) {
         var selectedProvider = balancer.choose();
         var isSend = false;
         while (Objects.nonNull(selectedProvider)) {
@@ -85,17 +93,7 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
     }
 
     private void sendToBuffer(GuaranteeSenderDto dataToSend) {
-        var objectMapper = new ObjectMapper();
-        String stringData;
-        try {
-            stringData = objectMapper.writeValueAsString(dataToSend);
-        } catch (JsonProcessingException e) {
-            throw new InternalGuaranteeException(
-                    String.format("Ошибка преобразования в строку при подписании %s", e.getMessage())
-            );
-        }
-        var singnature = configuration.getSignatureService().sign(stringData);
-        dataToSend.setSignature(singnature);
+        signData(dataToSend);
         for (var bufferConfig : bufferConfigs) {
             var providers = bufferConfig.getProvider().stream()
                     .sorted(Comparator.comparing(BalancingProvider::getWeight))
@@ -112,5 +110,19 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
                 }
             }
         } // todo продумать что будет в случае недоступности всех групп
+    }
+
+    private void signData(GuaranteeSenderDto dataToSend) {
+        var objectMapper = new ObjectMapper();
+        String stringData;
+        try {
+            stringData = objectMapper.writeValueAsString(dataToSend);
+        } catch (JsonProcessingException e) {
+            throw new InternalGuaranteeException(
+                    String.format("Ошибка преобразования в строку при подписании %s", e.getMessage())
+            );
+        }
+        var signature = configuration.getSignatureService().sign(stringData);
+        dataToSend.setSignature(signature);
     }
 }

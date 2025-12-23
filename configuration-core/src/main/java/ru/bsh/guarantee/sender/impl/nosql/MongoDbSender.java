@@ -8,7 +8,6 @@ import ru.bsh.guarantee.converter.GuaranteeSenderDtoToMongoConverter;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
 import ru.bsh.guarantee.exception.InternalGuaranteeException;
 import ru.bsh.guarantee.sender.GuaranteeSender;
-import ru.bsh.guarantee.sender.configuration.nosql.MongoConfiguration;
 
 import java.util.Map;
 import java.util.Objects;
@@ -18,24 +17,20 @@ import java.util.Objects;
 @ConditionalOnProperty(value = "guarantee.nosql.enabled", havingValue = "true")
 public class MongoDbSender implements GuaranteeSender {
 
-    private final MongoConfiguration configuration;
     private final Map<String, MongoClient> mongoClients;
+
     private final GuaranteeSenderDtoToMongoConverter converter = new GuaranteeSenderDtoToMongoConverter();
 
-    public MongoDbSender(MongoConfiguration configuration, Map<String, MongoClient> mongoClients) {
-        this.configuration = configuration;
+    public MongoDbSender(Map<String, MongoClient> mongoClients) {
         this.mongoClients = mongoClients;
     }
 
     @Override
     public void send(GuaranteeSenderDto dataToSend) {
         var isSend = false;
-        var dbByClients = configuration.getMongoSenderDto().getConnections();
         for (var name : mongoClients.keySet()) {
-            String db;
             MongoClient client;
             try {
-                db = dbByClients.get(name);
                 client = mongoClients.get(name);
             } catch (Exception e) {
                 log.error("При попытке переключения между Монго " +
@@ -44,8 +39,8 @@ public class MongoDbSender implements GuaranteeSender {
             }
 
             try {
-                client.getDatabase(db)
-                        .getCollection("guarantee")
+                client.getDatabase(name)
+                        .getCollection("guarantee_data")
                         .insertOne(Objects.requireNonNull(converter.convert(dataToSend)));
                 log.info("Отправка через MongoDb {} транспорт произошла успешно", name);
                 isSend = true;
