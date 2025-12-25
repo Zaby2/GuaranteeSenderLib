@@ -47,7 +47,7 @@ public class SqlSenderConfiguration {
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
         var emf = new LocalContainerEntityManagerFactoryBean();
         emf.setDataSource(dataSource);
-        emf.setPackagesToScan("com.example.lib.entities");
+        emf.setPackagesToScan("ru.bsh.guarantee.repository");
         emf.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
         var jpaProps = new HashMap<String, Object>();
