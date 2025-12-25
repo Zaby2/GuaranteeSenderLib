@@ -7,7 +7,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
 import ru.bsh.guarantee.exception.InternalGuaranteeException;
@@ -15,7 +14,6 @@ import ru.bsh.guarantee.sender.GuaranteeSender;
 import ru.bsh.guarantee.sender.configuration.http.HttpSenderConfiguration;
 import ru.bsh.guarantee.sender.configuration.retry.RetryConfiguration;
 
-@Service
 @Slf4j
 public class HttpSender implements GuaranteeSender {
 

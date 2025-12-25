@@ -5,14 +5,25 @@ guarantee:
     enabled: false
   kafka:
     enabled: false
-http:
-  url: test1
+http1:
+  url: http://localhost:8081/test
   headersMap:
     Accept: "application/json"
   retryConfiguration:
     exceptionsMap:
-      java.lang.NullPointerException: true
-    maxAttempts: 5
+      org.springframework.web.client.HttpServerErrorException: true
+    maxAttempts: 3
+    initialInterval: 5
+    intervalMultiplier: 5
+    maxInterval: 100
+http2:
+  url: http://localhost:8081/test/2
+  headersMap:
+    Accept: "application/json"
+  retryConfiguration:
+    exceptionsMap:
+      org.springframework.web.client.HttpServerErrorException: true
+    maxAttempts: 3
     initialInterval: 5
     intervalMultiplier: 5
     maxInterval: 100

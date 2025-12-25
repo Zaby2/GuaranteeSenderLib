@@ -12,6 +12,8 @@ public class TestService {
     private final GuaranteeSenderProxyImpl<Request> proxy;
 
     public void test() {
-        proxy.send(new Request());
+        var request = new Request();
+        request.setId(1L);
+        proxy.send(request);
     }
 }

@@ -83,7 +83,8 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
                 isSend = true;
                 break;
             } catch (Exception e) {
-                log.error("Ошибка отпрвки в главной группе для provider {}", selectedProvider.getName());
+                log.error("Ошибка {} отпрвки в главной группе для provider {}", e.getMessage(),
+                        selectedProvider.getName());
                 selectedProvider = balancer.choose();
             }
         }
