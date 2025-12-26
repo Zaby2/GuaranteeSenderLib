@@ -13,6 +13,8 @@ import ru.bsh.guarantee.repository.GuaranteeJpaRepository;
 import ru.bsh.guarantee.sender.configuration.sql.DbContext;
 import service.SignatureService;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static ru.bsh.guarantee.pull.utils.Utils.determineCurrentIndex;
@@ -44,7 +46,7 @@ public class SqlPullProcessor implements PullProcessor {
     }
 
     @Override
-    @Scheduled(cron = "${sql.pull.cron}")
+    @Scheduled(cron = "${guarantee.sql.puller.cron}")
     public void pull() {
         if (!lock.tryLock()) {
             return;
@@ -57,13 +59,16 @@ public class SqlPullProcessor implements PullProcessor {
 
             for (var entity : entities) {
                 var dataToResend = converter.convert(entity);
-                if (verifySignature(signatureService, dataToResend)) {
-                    log.info("Запись с id = {} прошла проверку ЭЦП", dataToResend.getId());
+                if (verifySignature(signatureService, dataToResend,
+                        new String(entity.getSignature(), StandardCharsets.UTF_8))) {
+
+                    log.info("Запись с id = {} прошла проверку ЭЦП", entity.getId());
                     proxy.send(dataToResend);
+                    entity.setPolledAt(new Date());
                     entity.setIsSent(true);
                     repository.save(entity);
                 } else {
-                    log.error("Запись с id = {} не прошла проверку ЭЦП", dataToResend.getId());
+                    log.error("Запись с id = {} не прошла проверку ЭЦП", entity.getId());
                 }
             }
         } catch (Exception e) {

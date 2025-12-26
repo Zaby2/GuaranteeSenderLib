@@ -1,8 +1,8 @@
 package ru.bsh.guarantee.entity;
 
+import jakarta.persistence.*;
 import lombok.Data;
 
-import javax.persistence.*;
 import java.util.Date;
 
 @Entity
@@ -13,7 +13,8 @@ public class SqlGuaranteeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String signature;
+    @Column(name = "signature")
+    private byte[] signature;
     private String requestValue;
     private String requestType;
     private Date createdAt;

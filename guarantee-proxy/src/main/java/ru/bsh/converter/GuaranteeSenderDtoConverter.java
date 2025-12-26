@@ -3,6 +3,9 @@ package ru.bsh.converter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
+import ru.bsh.guarantee.exception.InternalGuaranteeException;
+
+import java.util.Date;
 
 public class GuaranteeSenderDtoConverter<T> {
 
@@ -14,8 +17,10 @@ public class GuaranteeSenderDtoConverter<T> {
         try {
             result.setRequestValue(mapper.writeValueAsString(request));
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new InternalGuaranteeException(e.getMessage());
         }
+        result.setCreatedAt(new Date());
+        result.setIsSent(Boolean.FALSE);
         return result;
     }
 }

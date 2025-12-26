@@ -14,6 +14,7 @@ import ru.bsh.guarantee.pull.converter.GuaranteeSenderMongoToDtoConverter;
 import ru.bsh.guarantee.pull.puller.PullProcessor;
 import service.SignatureService;
 
+import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static ru.bsh.guarantee.pull.utils.Utils.determineCurrentIndex;
@@ -56,14 +57,16 @@ public class MongoPullProcessor implements PullProcessor {
             for (var document : iterableData) {
                 var dataToSend = converter.convert(document);
                 var objectId = document.getObjectId("_id");
-                if (verifySignature(signatureService, dataToSend)) {
-                    log.info("Запись с id = {} прошла проверку ЭЦП", objectId);
+                if (verifySignature(signatureService, dataToSend,
+                        new String(document.getString("signature")))) {
 
+                    log.info("Запись с id = {} прошла проверку ЭЦП", objectId);
                     proxy.send(dataToSend);
 
                     collection.updateOne(
                             Filters.eq("_id", objectId),
-                            Updates.set("isSent", true)
+                            Updates.combine(Updates.set("isSent", true),
+                                    Updates.set("polledAt", new Date()))
                     );
                 } else {
                     log.error("Запись с id = {} не прошла проверку ЭЦП", objectId);

@@ -28,29 +28,33 @@ public class CircuitBreaker {
         var currentState = state.get();
 
         switch (currentState) {
-            case CLOSED -> {
+            case CLOSED, HALF_OPEN -> {
                 return true;
             }
             case OPEN -> {
                 var now = System.currentTimeMillis();
                 if (now - lastFailureTime >= timeoutMs) {
-                    return state.compareAndSet(State.OPEN, State.HALF_OPEN);
+                    boolean transitioned = state.compareAndSet(State.OPEN, State.HALF_OPEN);
+                    return transitioned;
                 }
                 return false;
             }
-            case HALF_OPEN -> {
-                return false;
-            }
             default -> {
-                log.error("Получено неизвестное состояние в Circuit Breaker");
+                log.error("Получено неизвестное состояние в Circuit Breaker: {}", currentState);
                 return false;
             }
         }
     }
 
     public void onSuccess() {
-        failureCount.set(0);
-        state.set(State.CLOSED);
+        if (state.get() == State.HALF_OPEN) {
+            if (state.compareAndSet(State.HALF_OPEN, State.CLOSED)) {
+                log.info("Circuit Breaker transitioned from HALF_OPEN to CLOSED after successful request.");
+                failureCount.set(0);
+            }
+        } else {
+            failureCount.set(0);
+        }
     }
 
     public void onFailure() {
@@ -59,11 +63,13 @@ public class CircuitBreaker {
         var currentState = state.get();
         if (currentState == State.CLOSED) {
             int count = failureCount.incrementAndGet();
-            if (count >= failureThreshold) {
-                state.compareAndSet(State.CLOSED, State.OPEN);
+            if (count >= failureThreshold && state.compareAndSet(State.CLOSED, State.OPEN)) {
+                log.warn("Circuit Breaker transitioned from CLOSED to OPEN after {} failures.", failureThreshold);
             }
         } else if (currentState == State.HALF_OPEN) {
-            state.set(State.OPEN);
+            if (state.compareAndSet(State.HALF_OPEN, State.OPEN)) {
+                log.warn("Circuit Breaker transitioned from HALF_OPEN to OPEN after failure.");
+            }
         }
     }
 }

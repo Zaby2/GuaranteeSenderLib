@@ -13,23 +13,15 @@ import java.util.List;
 public interface GuaranteeJpaRepository extends JpaRepository<SqlGuaranteeEntity, Long> {
 
     @Query("""
-            select e
-            from guarantee_data
-            where e.isSent = false
-            order by e.createdAt DESC
+            select g
+            from SqlGuaranteeEntity g
+            where g.isSent = false
+            order by g.createdAt DESC
             """)
     List<SqlGuaranteeEntity> findDataToSend(Pageable pageable);
 
-    @Modifying
-    @Transactional
-    @Query(
-            value = """
-                    DELETE FROM uarantee_data
-                    WHERE isSent = true
-                    ORDER BY createdAt
-                    LIMIT :limit
-                    """,
-            nativeQuery = true
-    )
-    int deleteBatchByStatusTrue(@Param("limit") int limit);
+    @Query("SELECT sge.id FROM SqlGuaranteeEntity sge WHERE sge.isSent = true ORDER BY sge.createdAt ASC")
+    List<Long> findTopSentIdsOrderByCreatedAtAsc(Pageable pageable);
+
+    void deleteByIdIn(List<Long> ids);
 }

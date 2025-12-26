@@ -3,8 +3,10 @@ package ru.bsh.guarantee.pull.cleaner.sql;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.bsh.guarantee.pull.cleaner.CleanProcessor;
 import ru.bsh.guarantee.pull.configuration.db.SqlPullProcessorConfiguration;
 import ru.bsh.guarantee.repository.GuaranteeJpaRepository;
@@ -28,7 +30,8 @@ public class SqlCleanProcessor implements CleanProcessor {
     private Integer currentDataSourceIndex = 0;
 
     @Override
-    @Scheduled(cron = "${sql.clean.cron}")
+    @Scheduled(cron = "${guarantee.sql.cleaner.cron}")
+    @Transactional
     public void clean() {
         if (!lock.tryLock()) {
             return;
@@ -39,7 +42,9 @@ public class SqlCleanProcessor implements CleanProcessor {
         DbContext.set(currentDestination);
 
         try {
-            var result = repository.deleteBatchByStatusTrue(configuration.getCleanLimit());
+            var result = repository.findTopSentIdsOrderByCreatedAtAsc(
+                    PageRequest.of(0, configuration.getCleanLimit()));
+            repository.deleteByIdIn(result);
             log.info("Удалено {} записей из SQL {}", result, currentDestination);
         } catch (Exception e) {
             log.error("Ошибка {} удаления записей из SQL {}", e.getMessage(),

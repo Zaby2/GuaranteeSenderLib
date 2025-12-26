@@ -1,7 +1,6 @@
 package ru.bsh.guarantee.dto;
 
 import lombok.Data;
-import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,7 +11,7 @@ public class SqlSenderProperties {
 
     private Map<String, DataSourceProperties> propertiesMap = new HashMap<>();
 
-    @Getter
+    @Data
     public static class DataSourceProperties {
 
         private String url;

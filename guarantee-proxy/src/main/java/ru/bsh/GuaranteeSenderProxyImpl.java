@@ -3,7 +3,6 @@ package ru.bsh;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import ru.bsh.balancing.Balancer;
 import ru.bsh.balancing.WeightedLoadBalancer;
 import ru.bsh.breaker.CircuitBreaker;
@@ -24,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-@Service
 @Slf4j
 public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
 

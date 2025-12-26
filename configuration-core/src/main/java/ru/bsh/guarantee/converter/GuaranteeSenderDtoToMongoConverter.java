@@ -16,7 +16,7 @@ public class GuaranteeSenderDtoToMongoConverter implements
                 .append("requestValue", source.getRequestValue())
                 .append("requestType", source.getRequestType())
                 .append("createdAt", source.getCreatedAt() == null ? new Date() : source.getCreatedAt())
-                .append("polledAt", source.getPolledAt() == null ? new Date() : source.getPolledAt())
+                .append("polledAt", new Date())
                 .append("isSent", Boolean.FALSE);
     }
 }

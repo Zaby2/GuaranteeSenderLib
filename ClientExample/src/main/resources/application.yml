@@ -2,7 +2,22 @@ guarantee:
   nosql:
     enabled: false
   sql:
-    enabled: false
+    enabled: true
+    sender:
+      properties-map:
+        db1:
+          url: jdbc:postgresql://localhost:5432/db1
+          user-name: user
+          password: 1234
+          driver-class-name: org.postgresql.Driver
+    puller:
+      limit: 5
+      #cron: "0 15 10 * * ?"
+      cron: "*/30 * * * * ?"
+    cleaner:
+      limit: 5
+      #cron: "*/10 * * * * ?"
+      cron: "0 15 10 * * ?"
   kafka:
     enabled: false
 http1:

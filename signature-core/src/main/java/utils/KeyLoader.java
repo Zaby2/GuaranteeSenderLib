@@ -1,12 +1,16 @@
 package utils;
 
+import org.springframework.core.io.ClassPathResource;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.cert.*;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
@@ -40,12 +44,16 @@ public class KeyLoader {
 
 
     public static PrivateKey loadPrivateKeyFromPemFile(String path) throws GeneralSecurityException, IOException {
-        String pemContent = Files.readString(Paths.get(path));
+        var classPath = new ClassPathResource(path);
+        String pemContent = new String(classPath.getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8);
         return loadPrivateKeyFromPem(pemContent);
     }
 
     public static X509Certificate loadCertFromPemFile(String path) throws CertificateException, IOException {
-        String pemContent = Files.readString(Paths.get(path));
+        var classPath = new ClassPathResource(path);
+        String pemContent = new String(classPath.getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8);
         return loadCertFromPem(pemContent);
     }
 

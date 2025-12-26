@@ -12,7 +12,8 @@ import service.SignatureService;
 public class Utils {
 
     public static Boolean verifySignature(SignatureService signatureService,
-                                          GuaranteeSenderDto dto) {
+                                          GuaranteeSenderDto dto,
+                                          String signature) {
         var objectMapper = new ObjectMapper();
         String stringData;
         try {
@@ -23,7 +24,7 @@ public class Utils {
             );
         }
         try {
-            return signatureService.verify(stringData, dto.getSignature());
+            return signatureService.verify(stringData, signature);
         } catch (Exception e) {
             throw new InternalGuaranteeException(e.getMessage());
         }

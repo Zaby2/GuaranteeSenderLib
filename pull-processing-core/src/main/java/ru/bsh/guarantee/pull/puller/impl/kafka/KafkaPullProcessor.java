@@ -54,7 +54,8 @@ public class KafkaPullProcessor implements PullProcessor {
             records.forEach(r -> {
                 log.info("KafkaPullProcessor обрабатывает запись с key = {}", r.key());
                 var dataToResend = r.value();
-                if (verifySignature(signatureService, dataToResend)) {
+                dataToResend.setSignature(null);
+                if (verifySignature(signatureService, dataToResend, r.value().getSignature())) {
                     log.info("Запись с key = {} прошла проверку ЭЦП", r.key());
                     proxy.send(dataToResend);
                 } else {

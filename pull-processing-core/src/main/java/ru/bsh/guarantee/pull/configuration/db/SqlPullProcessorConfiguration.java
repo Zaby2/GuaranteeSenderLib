@@ -13,9 +13,9 @@ import java.util.List;
 @ConditionalOnProperty(name = "guarantee.sql.enabled", havingValue = "true")
 public class SqlPullProcessorConfiguration {
 
-    @Value("${sql.puller.limit}")
+    @Value("${guarantee.sql.puller.limit}")
     private Integer readLimit;
-    @Value("${sql.cleaner.limit}")
+    @Value("${guarantee.sql.cleaner.limit}")
     private Integer cleanLimit;
 
     private final List<String> destinations;
