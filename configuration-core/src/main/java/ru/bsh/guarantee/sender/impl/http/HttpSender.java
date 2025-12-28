@@ -34,7 +34,8 @@ public class HttpSender implements GuaranteeSender {
         try {
             clazz = Class.forName(dataToSend.getRequestType());
         } catch (ClassNotFoundException e) {
-            throw new InternalGuaranteeException(String.format("Ошибка преобразования объекта для отпарвки через http %s",
+            throw new InternalGuaranteeException(String.format("Ошибка преобразования" +
+                            " объекта для отпарвки через http %s",
                     e.getMessage()));
         }
         Object playLoad;

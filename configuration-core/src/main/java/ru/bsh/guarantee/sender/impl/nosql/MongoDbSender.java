@@ -23,6 +23,7 @@ public class MongoDbSender implements GuaranteeSender {
 
     public MongoDbSender(Map<String, MongoClient> mongoClients) {
         this.mongoClients = mongoClients;
+        log.info("Инициализирован MongoSender точки отправки: {}", mongoClients.keySet());
     }
 
     @Override
@@ -50,7 +51,8 @@ public class MongoDbSender implements GuaranteeSender {
             }
         }
         if (!isSend) {
-            throw new InternalGuaranteeException("Ошибка отправки через MongoDb");
+            throw new InternalGuaranteeException("Ошибка отправки через MongoDb: " +
+                    "не удалось отправить событие");
         }
     }
 }

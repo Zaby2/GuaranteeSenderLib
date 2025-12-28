@@ -45,7 +45,8 @@ public class SqlSender implements GuaranteeSender {
         }
         if (!isSend) {
             DbContext.clear();
-            throw new InternalGuaranteeException("Ошибка отправки через SQL транспорт");
+            throw new InternalGuaranteeException("Ошибка отправки через SQL транспорт:" +
+                    " не удалось отправить событие");
         }
     }
 }

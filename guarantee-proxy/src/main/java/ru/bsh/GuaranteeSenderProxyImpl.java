@@ -100,12 +100,12 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
             for (var provider : providers) {
                 try {
                     provider.getSender().send(dataToSend);
-                    log.info("Событие успешно отправлено через {} группы {}",
-                            provider.getName(), bufferConfig.getName());
+                    log.info("Событие успешно отправлено через {}",
+                            provider.getName());
                     break;
                 } catch (InternalGuaranteeException e) {
-                    log.error("Ошибка отправки через {} для группы {}",
-                            provider.getName(), bufferConfig.getName());
+                    log.error("Ошибка отправки через {}",
+                            provider.getName());
                 }
             }
         } // todo продумать что будет в случае недоступности всех групп

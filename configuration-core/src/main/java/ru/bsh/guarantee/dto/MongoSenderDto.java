@@ -7,5 +7,5 @@ import java.util.Map;
 @Data
 public class MongoSenderDto {
 
-    private final Map<String, String> connections;
+    private Map<String, String> connections;
 }

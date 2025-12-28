@@ -28,7 +28,7 @@ public class MongoDbCleanProcessor implements CleanProcessor {
     private final ReentrantLock lock = new ReentrantLock();
 
     @Override
-    @Scheduled(cron = "${no-sql.clean.cron}")
+    @Scheduled(cron = "${guarantee.nosql.cleaner.cron}")
     public void clean() {
         if (!lock.tryLock()) {
             return;
@@ -50,7 +50,8 @@ public class MongoDbCleanProcessor implements CleanProcessor {
 
             if (!idsToDelete.isEmpty()) {
                 collection.deleteMany(Filters.in("_id", idsToDelete));
-                log.info("Удалено {} записей из MongoDb {}", idsToDelete.size(), currentDbName);
+                log.info("Удалено {} записей из MongoDb {} - {}", idsToDelete.size(), currentDbName,
+                        idsToDelete);
             }
         } catch (Exception e) {
             log.error("Ошибка {} удаления записей через MongoDb {}", e.getMessage(), currentDbName);

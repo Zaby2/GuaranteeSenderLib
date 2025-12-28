@@ -1,6 +1,17 @@
 guarantee:
   nosql:
-    enabled: false
+    enabled: true
+    sender:
+      connections:
+        db1: mongodb://user:1234@localhost:27017/?authSource=admin
+    puller:
+      limit: 5
+      cron: "0 15 10 * * ?"
+      #cron: "*/30 * * * * ?"
+    cleaner:
+      limit: 5
+      cron: "*/10 * * * * ?"
+      #cron: "0 15 10 * * ?"
   sql:
     enabled: true
     sender:

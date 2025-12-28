@@ -37,7 +37,7 @@ public class MongoPullProcessor implements PullProcessor {
     private final ReentrantLock lock = new ReentrantLock();
 
     @Override
-    @Scheduled(cron = "${no-sql.pull.cron}")
+    @Scheduled(cron = "${guarantee.nosql.puller.cron}")
     public void pull() {
         if (!lock.tryLock()) {
             return;

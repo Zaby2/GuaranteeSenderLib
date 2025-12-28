@@ -13,6 +13,7 @@ public class GuaranteeSenderMongoToDtoConverter implements
         result.setRequestValue(source.getString("requestValue"));
         result.setRequestType(source.getString("requestType"));
         result.setCreatedAt(source.getDate("createdAt"));
+        result.setIsSent(source.getBoolean("isSent"));
         return result;
     }
 }

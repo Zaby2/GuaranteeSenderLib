@@ -20,9 +20,10 @@ public class TestConfiguration {
     @Bean
     public List<BalancingGroupConfiguration> balancingGroupConfigurations(
             @Qualifier("httpGroup") BalancingGroupConfiguration httpBg,
+            @Qualifier("mongoGroup") BalancingGroupConfiguration mongoBg,
             @Qualifier("sqlGroup") BalancingGroupConfiguration sqlBg
     ) {
-        return List.of(httpBg, sqlBg);
+        return List.of(httpBg, sqlBg, mongoBg);
     }
 
     @Bean

@@ -1,5 +1,6 @@
 package ru.bsh.configuration;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,7 @@ import ru.bsh.guarantee.sender.impl.sql.SqlSender;
 import java.util.List;
 
 @Configuration
+@ConditionalOnProperty(name = "guarantee.sql.enabled", havingValue = "true")
 public class SqlTestConfiguration {
 
     @Bean

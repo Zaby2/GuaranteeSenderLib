@@ -15,7 +15,7 @@ public class GuaranteeSenderDtoToMongoConverter implements
                 .append("signature", source.getSignature())
                 .append("requestValue", source.getRequestValue())
                 .append("requestType", source.getRequestType())
-                .append("createdAt", source.getCreatedAt() == null ? new Date() : source.getCreatedAt())
+                .append("createdAt", source.getCreatedAt())
                 .append("polledAt", new Date())
                 .append("isSent", Boolean.FALSE);
     }

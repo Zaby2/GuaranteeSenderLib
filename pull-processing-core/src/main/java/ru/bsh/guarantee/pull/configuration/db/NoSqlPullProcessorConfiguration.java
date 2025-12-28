@@ -15,9 +15,9 @@ import java.util.Map;
 @ConditionalOnProperty(value = "guarantee.nosql.enabled", havingValue = "true")
 public class NoSqlPullProcessorConfiguration {
 
-    @Value("${no-sql.puller.limit}")
+    @Value("${guarantee.nosql.puller.limit}")
     private Integer readLimit;
-    @Value("${no-sql.cleaner.limit}")
+    @Value("${guarantee.nosql.cleaner.limit}")
     private Integer cleanLimit;
 
     private final Map<String, MongoClient> mongoClients;
