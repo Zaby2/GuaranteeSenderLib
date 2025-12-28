@@ -12,4 +12,5 @@ public class BalancingGroupConfiguration {
     private String name;
     private List<BalancingProvider> provider;
     private BufferType type;
+    private Integer weight;
 }

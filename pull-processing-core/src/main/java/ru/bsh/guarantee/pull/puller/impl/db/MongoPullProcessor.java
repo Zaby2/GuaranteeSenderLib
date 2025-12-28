@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.bsh.GuaranteeSenderProxyImpl;
+import ru.bsh.guarantee.monitoring.GuaranteeMonitoring;
 import ru.bsh.guarantee.pull.configuration.db.NoSqlPullProcessorConfiguration;
 import ru.bsh.guarantee.pull.converter.GuaranteeSenderMongoToDtoConverter;
 import ru.bsh.guarantee.pull.puller.PullProcessor;
@@ -17,6 +18,8 @@ import service.SignatureService;
 import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static ru.bsh.guarantee.monitoring.MonitoringConstants.NO_SQL_PULLER;
+import static ru.bsh.guarantee.monitoring.MonitoringConstants.SIGNATURE_CHECK;
 import static ru.bsh.guarantee.pull.utils.Utils.determineCurrentIndex;
 import static ru.bsh.guarantee.pull.utils.Utils.verifySignature;
 
@@ -29,6 +32,7 @@ public class MongoPullProcessor implements PullProcessor {
     private final NoSqlPullProcessorConfiguration configuration;
     private final GuaranteeSenderProxyImpl<?> proxy;
     private final SignatureService signatureService;
+    private final GuaranteeMonitoring monitoring;
 
     private final GuaranteeSenderMongoToDtoConverter converter = new GuaranteeSenderMongoToDtoConverter();
 
@@ -37,7 +41,7 @@ public class MongoPullProcessor implements PullProcessor {
     private final ReentrantLock lock = new ReentrantLock();
 
     @Override
-    @Scheduled(cron = "${guarantee.nosql.puller.cron}")
+    @Scheduled(cron = "${guarantee.nosql.mongo.puller.cron}")
     public void pull() {
         if (!lock.tryLock()) {
             return;
@@ -68,11 +72,14 @@ public class MongoPullProcessor implements PullProcessor {
                             Updates.combine(Updates.set("isSent", true),
                                     Updates.set("polledAt", new Date()))
                     );
+                    monitoring.success(NO_SQL_PULLER.getLayer(), NO_SQL_PULLER.getOperation());
                 } else {
+                    monitoring.fail(SIGNATURE_CHECK.getLayer(), SIGNATURE_CHECK.getOperation());
                     log.error("Запись с id = {} не прошла проверку ЭЦП", objectId);
                 }
             }
         } catch (Exception e) {
+            monitoring.fail(NO_SQL_PULLER.getLayer(), NO_SQL_PULLER.getOperation());
             log.error("Ошибка {} при доотправке данных из MongoDb {}",
                     e.getMessage(), currentDbName);
         } finally {

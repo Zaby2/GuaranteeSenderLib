@@ -33,6 +33,7 @@ public class SqlTestConfiguration {
         sqlConf.setName("SQL");
         sqlConf.setType(BufferType.SQL);
         sqlConf.setProvider(List.of(sqlProvider));
+        sqlConf.setWeight(3);
         return sqlConf;
     }
 }

@@ -10,22 +10,28 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.RestTemplate;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
 import ru.bsh.guarantee.exception.InternalGuaranteeException;
+import ru.bsh.guarantee.monitoring.GuaranteeMonitoring;
 import ru.bsh.guarantee.sender.GuaranteeSender;
 import ru.bsh.guarantee.sender.configuration.http.HttpSenderConfiguration;
 import ru.bsh.guarantee.sender.configuration.retry.RetryConfiguration;
+
+import static ru.bsh.guarantee.monitoring.MonitoringConstants.HTTP_SENDER;
+import static ru.bsh.guarantee.monitoring.MonitoringConstants.TRANSPORT;
 
 @Slf4j
 public class HttpSender implements GuaranteeSender {
 
     private final HttpSenderConfiguration configuration;
     private final RetryTemplate retryTemplate;
+    private final GuaranteeMonitoring monitoring;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public HttpSender(HttpSenderConfiguration configuration) {
+    public HttpSender(HttpSenderConfiguration configuration, GuaranteeMonitoring monitoring) {
         this.configuration = configuration;
         this.retryTemplate = buildRetryTemplate(configuration.getRetryConfiguration());
+        this.monitoring = monitoring;
     }
 
     @Override
@@ -34,6 +40,7 @@ public class HttpSender implements GuaranteeSender {
         try {
             clazz = Class.forName(dataToSend.getRequestType());
         } catch (ClassNotFoundException e) {
+            monitoring.fail(HTTP_SENDER.getLayer(), HTTP_SENDER.getOperation());
             throw new InternalGuaranteeException(String.format("Ошибка преобразования" +
                             " объекта для отпарвки через http %s",
                     e.getMessage()));
@@ -42,6 +49,7 @@ public class HttpSender implements GuaranteeSender {
         try {
             playLoad = objectMapper.readValue(dataToSend.getRequestValue(), clazz);
         } catch (JsonProcessingException e) {
+            monitoring.fail(HTTP_SENDER.getLayer(), HTTP_SENDER.getOperation());
             throw new InternalGuaranteeException(e.getMessage());
         }
         HttpEntity requestEntity;
@@ -53,11 +61,13 @@ public class HttpSender implements GuaranteeSender {
         try {
             retryTemplate.execute(context ->
                     restTemplate.postForEntity(configuration.getUrl(), requestEntity, Void.class));
+
+            monitoring.success(HTTP_SENDER.getLayer(), HTTP_SENDER.getOperation());
         } catch (Exception e) {
+            monitoring.fail(TRANSPORT.getLayer(), TRANSPORT.getOperation());
             throw new InternalGuaranteeException(
                     String.format("Ошибка отправки через Http транспорт %s", e.getMessage()));
         }
-
     }
 
     private RetryTemplate buildRetryTemplate(RetryConfiguration configuration) {

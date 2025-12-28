@@ -1,17 +1,26 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: my-app
 guarantee:
   nosql:
     enabled: true
-    sender:
-      connections:
-        db1: mongodb://user:1234@localhost:27017/?authSource=admin
-    puller:
-      limit: 5
-      cron: "0 15 10 * * ?"
-      #cron: "*/30 * * * * ?"
-    cleaner:
-      limit: 5
-      cron: "*/10 * * * * ?"
-      #cron: "0 15 10 * * ?"
+    mongo:
+      sender:
+        connections:
+          db1: mongodb://user:1234@localhost:27017/?authSource=admin
+      puller:
+        limit: 5
+        cron: "0 15 10 * * ?"
+        #cron: "*/30 * * * * ?"
+      cleaner:
+        limit: 5
+        cron: "*/15 * * * * ?"
+        #cron: "0 15 10 * * ?"
   sql:
     enabled: true
     sender:
@@ -22,34 +31,54 @@ guarantee:
           password: 1234
           driver-class-name: org.postgresql.Driver
     puller:
-      limit: 5
+      limit: 10
       #cron: "0 15 10 * * ?"
-      cron: "*/30 * * * * ?"
+      cron: "*/35 * * * * ?"
     cleaner:
       limit: 5
       #cron: "*/10 * * * * ?"
       cron: "0 15 10 * * ?"
   kafka:
-    enabled: false
-http1:
-  url: http://localhost:8081/test
-  headersMap:
-    Accept: "application/json"
-  retryConfiguration:
-    exceptionsMap:
-      org.springframework.web.client.HttpServerErrorException: true
-    maxAttempts: 3
-    initialInterval: 5
-    intervalMultiplier: 5
-    maxInterval: 100
-http2:
-  url: http://localhost:8081/test/2
-  headersMap:
-    Accept: "application/json"
-  retryConfiguration:
-    exceptionsMap:
-      org.springframework.web.client.HttpServerErrorException: true
-    maxAttempts: 3
-    initialInterval: 5
-    intervalMultiplier: 5
-    maxInterval: 100
+    enabled: true
+    sender:
+      topic: test-topic
+      bootstrap-servers: localhost:9092
+      client-id: main-producer
+      acks: 0
+      max-retries: 1
+      rq-timeout-ms: 10000
+      delivery-timeout-ms: 10000
+    puller:
+      durationSec: "10"
+      cron: "*/10 * * * * ?"
+      #cron: "0 15 10 * * ?"
+      topic: test-topic
+      bootstrap-servers: localhost:9092
+      group-id: main-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 100
+  http1:
+    url: http://localhost:8081/test
+    headersMap:
+      Accept: "application/json"
+    retryConfiguration:
+      exceptionsMap:
+        org.springframework.web.client.HttpServerErrorException: true
+      maxAttempts: 3
+      initialInterval: 5
+      intervalMultiplier: 5
+      maxInterval: 100
+  http2:
+    url: http://localhost:8081/test/2
+    headersMap:
+      Accept: "application/json"
+    retryConfiguration:
+      exceptionsMap:
+        org.springframework.web.client.HttpServerErrorException: true
+      maxAttempts: 3
+      initialInterval: 5
+      intervalMultiplier: 5
+      maxInterval: 100

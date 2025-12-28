@@ -1,11 +1,12 @@
 package store.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import store.KeyStoreProvider;
 import utils.KeyLoader;
 
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
@@ -20,14 +21,16 @@ public class JksKeyStoreProvider implements KeyStoreProvider {
 
     @Override
     public PrivateKey getPrivateKey() throws Exception {
-        try (FileInputStream fis = new FileInputStream(jksPath)) {
+        var resource = new ClassPathResource(jksPath);
+        try (InputStream fis = resource.getInputStream()) {
             return KeyLoader.loadFromJks(fis, storePassword, alias, storePassword).getPrivateKey();
         }
     }
 
     @Override
     public X509Certificate getCertificate() throws Exception {
-        try (FileInputStream fis = new FileInputStream(jksPath)) {
+        var resource = new ClassPathResource(jksPath);
+        try (InputStream fis = resource.getInputStream()) {
             return KeyLoader.loadFromJks(fis, storePassword, alias, storePassword).getCertificate();
         }
     }

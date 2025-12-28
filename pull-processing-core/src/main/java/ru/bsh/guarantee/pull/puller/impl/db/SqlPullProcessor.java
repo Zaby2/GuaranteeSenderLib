@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.bsh.GuaranteeSenderProxyImpl;
+import ru.bsh.guarantee.monitoring.GuaranteeMonitoring;
 import ru.bsh.guarantee.pull.configuration.db.SqlPullProcessorConfiguration;
 import ru.bsh.guarantee.pull.converter.GuaranteeSenderEntityToDtoConverter;
 import ru.bsh.guarantee.pull.puller.PullProcessor;
@@ -17,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static ru.bsh.guarantee.monitoring.MonitoringConstants.SIGNATURE_CHECK;
+import static ru.bsh.guarantee.monitoring.MonitoringConstants.SQL_PULLER;
 import static ru.bsh.guarantee.pull.utils.Utils.determineCurrentIndex;
 import static ru.bsh.guarantee.pull.utils.Utils.verifySignature;
 
@@ -29,6 +32,7 @@ public class SqlPullProcessor implements PullProcessor {
     private final GuaranteeSenderProxyImpl<?> proxy;
     private final SignatureService signatureService;
     private final GuaranteeJpaRepository repository;
+    private final GuaranteeMonitoring monitoring;
 
     private final ReentrantLock lock = new ReentrantLock();
     private final GuaranteeSenderEntityToDtoConverter converter = new GuaranteeSenderEntityToDtoConverter();
@@ -38,11 +42,13 @@ public class SqlPullProcessor implements PullProcessor {
     public SqlPullProcessor(SqlPullProcessorConfiguration configuration,
                             GuaranteeSenderProxyImpl<?> proxy,
                             SignatureService signatureService,
-                            GuaranteeJpaRepository repository) {
+                            GuaranteeJpaRepository repository,
+                            GuaranteeMonitoring monitoring) {
         this.configuration = configuration;
         this.proxy = proxy;
         this.signatureService = signatureService;
         this.repository = repository;
+        this.monitoring = monitoring;
     }
 
     @Override
@@ -68,10 +74,13 @@ public class SqlPullProcessor implements PullProcessor {
                     entity.setIsSent(true);
                     repository.save(entity);
                 } else {
+                    monitoring.fail(SIGNATURE_CHECK.getLayer(), SIGNATURE_CHECK.getOperation());
                     log.error("Запись с id = {} не прошла проверку ЭЦП", entity.getId());
                 }
             }
+            monitoring.success(SQL_PULLER.getLayer(), SQL_PULLER.getOperation());
         } catch (Exception e) {
+            monitoring.fail(SQL_PULLER.getLayer(), SQL_PULLER.getOperation());
             log.error("Ошибка {} при доотправке данных из SQL {}",
                     e.getMessage(), destinations.get(currentDataSourceIndex));
         } finally {

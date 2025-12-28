@@ -17,7 +17,7 @@ import java.util.List;
 public class MongoTestConfiguration {
 
     @Bean
-    @ConfigurationProperties(prefix = "guarantee.nosql.sender")
+    @ConfigurationProperties(prefix = "guarantee.nosql.mongo.sender")
     public MongoSenderDto mongoSenderDto() {
         return new MongoSenderDto();
     }
@@ -33,6 +33,7 @@ public class MongoTestConfiguration {
         mongoConf.setName("Mongo Sender");
         mongoConf.setType(BufferType.NOSQL);
         mongoConf.setProvider(List.of(mongoProvider));
+        mongoConf.setWeight(4);
         return mongoConf;
     }
 }

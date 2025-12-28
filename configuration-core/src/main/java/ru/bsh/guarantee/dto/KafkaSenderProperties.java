@@ -9,7 +9,7 @@ public class KafkaSenderProperties {
     private String bootstrapServers;
     private String clientId;
     private String acks;
-    private Long maxRetries;
-    private Long rqTimeoutMs;
-    private Long deliveryTimeoutMs;
+    private Integer maxRetries;
+    private Integer rqTimeoutMs;
+    private Integer deliveryTimeoutMs;
 }

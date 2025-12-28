@@ -20,12 +20,12 @@ import java.util.HashMap;
 @Configuration
 @RequiredArgsConstructor
 @ConditionalOnProperty(value = "guarantee.kafka.enabled", havingValue = "true")
-public class KafkaConfiguration { // todo: configurationProperties
+public class KafkaConfiguration {
 
     @Getter
     private final KafkaSenderProperties properties;
 
-    @Bean
+    @Bean("kafkaGuaranteeProducer")
     public ProducerFactory<String, GuaranteeSenderDto> producerFactory() {
         var cfg = new HashMap<String, Object>();
 
@@ -44,7 +44,7 @@ public class KafkaConfiguration { // todo: configurationProperties
         return pf;
     }
 
-    @Bean
+    @Bean("kafkaGuaranteeTemplate")
     public KafkaTemplate<String, GuaranteeSenderDto> kafkaTemplate(
             ProducerFactory<String, GuaranteeSenderDto> factory
     ) {

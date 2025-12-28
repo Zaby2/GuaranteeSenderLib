@@ -8,8 +8,7 @@ import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 
 @SpringBootApplication
-@EnableAutoConfiguration(exclude = {MongoAutoConfiguration.class, DataSourceAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class})
+@EnableAutoConfiguration(exclude = {MongoAutoConfiguration.class})
 public class ClientSpringBootExampleApp {
 
     public static void main(String[] args) {

@@ -14,6 +14,7 @@ import ru.bsh.guarantee.configuration.GuaranteeSenderConfiguration;
 import ru.bsh.guarantee.dto.BufferType;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
 import ru.bsh.guarantee.exception.InternalGuaranteeException;
+import ru.bsh.guarantee.monitoring.GuaranteeMonitoring;
 
 import java.util.Comparator;
 import java.util.List;
@@ -23,6 +24,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static ru.bsh.guarantee.monitoring.MonitoringConstants.GUARANTEE_SENDER;
+import static ru.bsh.guarantee.monitoring.MonitoringConstants.SIGN_DATA;
+
 @Slf4j
 public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
 
@@ -31,11 +35,14 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
     private final List<BalancingGroupConfiguration> bufferConfigs;
     private final Balancer balancer;
     private final CircuitBreakerManager circuitBreakerManager;
+    private final GuaranteeMonitoring monitoring;
 
-    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final GuaranteeSenderDtoConverter<T> converter = new GuaranteeSenderDtoConverter<>();
 
-    public GuaranteeSenderProxyImpl(GuaranteeSenderConfiguration configuration) {
+    public GuaranteeSenderProxyImpl(GuaranteeSenderConfiguration configuration,
+                                    GuaranteeMonitoring monitoring) {
+        this.monitoring = monitoring;
         var mainGroup = configuration.getBalancingGroupConfigurations()
                 .stream()
                 .filter(conf -> conf.getType() == BufferType.HTTP)
@@ -57,6 +64,7 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
         this.balancer = new WeightedLoadBalancer(mainGroup, circuitBreakerManager);
         this.bufferConfigs = configuration.getBalancingGroupConfigurations().stream()
                 .filter(conf -> conf.getType() != BufferType.HTTP)
+                .sorted(Comparator.comparing(BalancingGroupConfiguration::getWeight))
                 .toList();
     }
 
@@ -93,7 +101,11 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
 
     private void sendToBuffer(GuaranteeSenderDto dataToSend) {
         signData(dataToSend);
+        var isSend = false;
         for (var bufferConfig : bufferConfigs) {
+            if (isSend) {
+                break;
+            }
             var providers = bufferConfig.getProvider().stream()
                     .sorted(Comparator.comparing(BalancingProvider::getWeight))
                     .toList();
@@ -102,13 +114,17 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
                     provider.getSender().send(dataToSend);
                     log.info("Событие успешно отправлено через {}",
                             provider.getName());
+                    isSend = true;
                     break;
                 } catch (InternalGuaranteeException e) {
                     log.error("Ошибка отправки через {}",
                             provider.getName());
                 }
             }
-        } // todo продумать что будет в случае недоступности всех групп
+        }
+        if (!isSend) {
+            monitoring.fail(GUARANTEE_SENDER.getLayer(), GUARANTEE_SENDER.getOperation());
+        }
     }
 
     private void signData(GuaranteeSenderDto dataToSend) {
@@ -117,6 +133,7 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
         try {
             stringData = objectMapper.writeValueAsString(dataToSend);
         } catch (JsonProcessingException e) {
+            monitoring.fail(SIGN_DATA.getLayer(), SIGN_DATA.getOperation());
             throw new InternalGuaranteeException(
                     String.format("Ошибка преобразования в строку при подписании %s", e.getMessage())
             );
