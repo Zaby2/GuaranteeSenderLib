@@ -2,6 +2,7 @@ package ru.bsh;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import ru.bsh.balancing.Balancer;
 import ru.bsh.balancing.WeightedLoadBalancer;
@@ -36,13 +37,17 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
     private final Balancer balancer;
     private final CircuitBreakerManager circuitBreakerManager;
     private final GuaranteeMonitoring monitoring;
+    @Getter
+    private final Class<T> playLoadType;
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final GuaranteeSenderDtoConverter<T> converter = new GuaranteeSenderDtoConverter<>();
 
     public GuaranteeSenderProxyImpl(GuaranteeSenderConfiguration configuration,
-                                    GuaranteeMonitoring monitoring) {
+                                    GuaranteeMonitoring monitoring,
+                                    Class<T> playLoadType) {
         this.monitoring = monitoring;
+        this.playLoadType = playLoadType;
         var mainGroup = configuration.getBalancingGroupConfigurations()
                 .stream()
                 .filter(conf -> conf.getType() == BufferType.HTTP)

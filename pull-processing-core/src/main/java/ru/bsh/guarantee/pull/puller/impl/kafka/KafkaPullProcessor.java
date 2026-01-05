@@ -14,6 +14,9 @@ import service.SignatureService;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static ru.bsh.guarantee.monitoring.MonitoringConstants.BROKER_PULLER;
@@ -26,7 +29,7 @@ import static ru.bsh.guarantee.pull.utils.Utils.verifySignature;
 public class KafkaPullProcessor implements PullProcessor {
 
     private final KafkaConsumer<String, GuaranteeSenderDto> kafkaConsumer;
-    private final GuaranteeSenderProxyImpl<?> proxy;
+    private final Map<String, GuaranteeSenderProxyImpl<?>> proxyMap;
     private final SignatureService signatureService;
     private final GuaranteeMonitoring monitoring;
 
@@ -36,15 +39,18 @@ public class KafkaPullProcessor implements PullProcessor {
     private Long durationOfSeconds;
 
     public KafkaPullProcessor(KafkaConsumer<String, GuaranteeSenderDto> kafkaConsumer,
-                              GuaranteeSenderProxyImpl<?> proxy,
+                              List<GuaranteeSenderProxyImpl<?>> proxy,
                               SignatureService signatureService,
                               GuaranteeMonitoring monitoring,
                               @Value("${guarantee.kafka.puller.topic}") String topic) {
         this.kafkaConsumer = kafkaConsumer;
-        this.proxy = proxy;
         this.signatureService = signatureService;
         this.monitoring = monitoring;
         this.kafkaConsumer.subscribe(Collections.singletonList(topic));
+
+        var map = new HashMap<String, GuaranteeSenderProxyImpl<?>>();
+        proxy.forEach(p -> map.put(p.getPlayLoadType().getName(), p));
+        this.proxyMap = map;
     }
 
     @Override
@@ -63,13 +69,19 @@ public class KafkaPullProcessor implements PullProcessor {
             records.forEach(r -> {
                 log.info("KafkaPullProcessor обрабатывает запись offset = {}, partition = {}",
                         r.offset(), r.partition());
-                var dataToResend = r.value();
-                var signature = dataToResend.getSignature();
-                dataToResend.setSignature(null);
-                if (verifySignature(signatureService, dataToResend, signature)) {
+                var dataToSend = r.value();
+                var signature = dataToSend.getSignature();
+                dataToSend.setSignature(null);
+                var proxy = proxyMap.getOrDefault(dataToSend.getRequestType(), null);
+                if (proxy == null) {
+                    log.error("Для записи с offset = {}, paratition {}" +
+                            " не найден подходящий прокси", r.offset(), r.partition());
+                    return;
+                }
+                if (verifySignature(signatureService, dataToSend, signature)) {
                     log.info("Запись с offset = {}, paratition {} прошла " +
                             "проверку ЭЦП", r.offset(), r.partition());
-                    proxy.send(dataToResend);
+                    proxy.send(dataToSend);
                 } else {
                     monitoring.fail(SIGNATURE_CHECK.getLayer(), SIGNATURE_CHECK.getOperation());
                     log.error("Запись с offset = {}, partition = {}" +

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.bsh.GuaranteeSenderProxyImpl;
 import ru.bsh.dto.Request;
+import ru.bsh.dto.RequestV2;
 import ru.bsh.guarantee.balancing.BalancingGroupConfiguration;
 import ru.bsh.guarantee.balancing.CircuitBreakerConfiguration;
 import ru.bsh.guarantee.configuration.GuaranteeSenderConfiguration;
@@ -21,11 +22,11 @@ public class TestConfiguration {
     @Bean
     public List<BalancingGroupConfiguration> balancingGroupConfigurations(
             @Qualifier("httpGroup") BalancingGroupConfiguration httpBg,
-            @Qualifier("mongoGroup") BalancingGroupConfiguration mongoBg,
+            //@Qualifier("mongoGroup") BalancingGroupConfiguration mongoBg,
             @Qualifier("sqlGroup") BalancingGroupConfiguration sqlBg,
             @Qualifier("kafkaGroup") BalancingGroupConfiguration kafkaBg
     ) {
-        return List.of(httpBg, sqlBg, mongoBg, kafkaBg);
+        return List.of(httpBg, sqlBg, kafkaBg);
     }
 
     @Bean
@@ -49,6 +50,14 @@ public class TestConfiguration {
             GuaranteeSenderConfiguration configuration,
             GuaranteeMonitoring monitoring
     ) {
-        return new GuaranteeSenderProxyImpl<>(configuration, monitoring);
+        return new GuaranteeSenderProxyImpl<>(configuration, monitoring, Request.class);
+    }
+
+    @Bean
+    public GuaranteeSenderProxyImpl<RequestV2> guaranteeSenderProxyV2(
+            GuaranteeSenderConfiguration configuration,
+            GuaranteeMonitoring monitoring
+    ) {
+        return new GuaranteeSenderProxyImpl<>(configuration, monitoring, RequestV2.class);
     }
 }

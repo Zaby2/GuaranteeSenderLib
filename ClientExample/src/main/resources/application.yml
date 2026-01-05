@@ -8,7 +8,7 @@ management:
       application: my-app
 guarantee:
   nosql:
-    enabled: true
+    enabled: false
     mongo:
       sender:
         connections:

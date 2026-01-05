@@ -16,6 +16,9 @@ import service.SignatureService;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static ru.bsh.guarantee.monitoring.MonitoringConstants.SIGNATURE_CHECK;
@@ -29,7 +32,7 @@ import static ru.bsh.guarantee.pull.utils.Utils.verifySignature;
 public class SqlPullProcessor implements PullProcessor {
 
     private final SqlPullProcessorConfiguration configuration;
-    private final GuaranteeSenderProxyImpl<?> proxy;
+    private final Map<String, GuaranteeSenderProxyImpl<?>> proxyMap;
     private final SignatureService signatureService;
     private final GuaranteeJpaRepository repository;
     private final GuaranteeMonitoring monitoring;
@@ -40,15 +43,18 @@ public class SqlPullProcessor implements PullProcessor {
     private Integer currentDataSourceIndex = 0;
 
     public SqlPullProcessor(SqlPullProcessorConfiguration configuration,
-                            GuaranteeSenderProxyImpl<?> proxy,
+                            List<GuaranteeSenderProxyImpl<?>> proxy,
                             SignatureService signatureService,
                             GuaranteeJpaRepository repository,
                             GuaranteeMonitoring monitoring) {
         this.configuration = configuration;
-        this.proxy = proxy;
         this.signatureService = signatureService;
         this.repository = repository;
         this.monitoring = monitoring;
+
+        var map = new HashMap<String, GuaranteeSenderProxyImpl<?>>();
+        proxy.forEach(p -> map.put(p.getPlayLoadType().getName(), p));
+        this.proxyMap = map;
     }
 
     @Override
@@ -64,12 +70,17 @@ public class SqlPullProcessor implements PullProcessor {
                     PageRequest.of(0, configuration.getReadLimit()));
 
             for (var entity : entities) {
-                var dataToResend = converter.convert(entity);
-                if (verifySignature(signatureService, dataToResend,
+                var dataToSend = converter.convert(entity);
+                var proxy = proxyMap.getOrDefault(dataToSend.getRequestType(), null);
+                if (proxy == null) {
+                    log.error("Для записи с id = {} не найден подходящий прокси", entity.getId());
+                    continue;
+                }
+                if (verifySignature(signatureService, dataToSend,
                         new String(entity.getSignature(), StandardCharsets.UTF_8))) {
 
                     log.info("Запись с id = {} прошла проверку ЭЦП", entity.getId());
-                    proxy.send(dataToResend);
+                    proxy.send(dataToSend);
                     entity.setPolledAt(new Date());
                     entity.setIsSent(true);
                     repository.save(entity);

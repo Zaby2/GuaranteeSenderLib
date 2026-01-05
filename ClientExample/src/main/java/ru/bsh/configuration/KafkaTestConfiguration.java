@@ -38,7 +38,7 @@ public class KafkaTestConfiguration {
         kafkaConf.setName("kafka Sender");
         kafkaConf.setType(BufferType.BROKER);
         kafkaConf.setProvider(List.of(kafkaProvider));
-        kafkaConf.setWeight(5);
+        kafkaConf.setWeight(1);
         return kafkaConf;
     }
 }

@@ -3,7 +3,6 @@ package ru.bsh.guarantee.pull.puller.impl.db;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import com.mongodb.client.model.Updates;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,6 +15,9 @@ import ru.bsh.guarantee.pull.puller.PullProcessor;
 import service.SignatureService;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static ru.bsh.guarantee.monitoring.MonitoringConstants.NO_SQL_PULLER;
@@ -25,12 +27,11 @@ import static ru.bsh.guarantee.pull.utils.Utils.verifySignature;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 @ConditionalOnProperty(value = "guarantee.nosql.enabled", havingValue = "true")
 public class MongoPullProcessor implements PullProcessor {
 
     private final NoSqlPullProcessorConfiguration configuration;
-    private final GuaranteeSenderProxyImpl<?> proxy;
+    private final Map<String, GuaranteeSenderProxyImpl<?>> proxyMap;
     private final SignatureService signatureService;
     private final GuaranteeMonitoring monitoring;
 
@@ -39,6 +40,19 @@ public class MongoPullProcessor implements PullProcessor {
     private Integer currentDbIndex = 0;
 
     private final ReentrantLock lock = new ReentrantLock();
+
+    public MongoPullProcessor(NoSqlPullProcessorConfiguration configuration,
+                              List<GuaranteeSenderProxyImpl<?>> proxy,
+                              SignatureService signatureService,
+                              GuaranteeMonitoring monitoring) {
+        this.configuration = configuration;
+        this.signatureService = signatureService;
+        this.monitoring = monitoring;
+
+        var map = new HashMap<String, GuaranteeSenderProxyImpl<?>>();
+        proxy.forEach(p -> map.put(p.getPlayLoadType().getName(), p));
+        this.proxyMap = map;
+    }
 
     @Override
     @Scheduled(cron = "${guarantee.nosql.mongo.puller.cron}")
@@ -61,6 +75,11 @@ public class MongoPullProcessor implements PullProcessor {
             for (var document : iterableData) {
                 var dataToSend = converter.convert(document);
                 var objectId = document.getObjectId("_id");
+                var proxy = proxyMap.getOrDefault(dataToSend.getRequestType(), null);
+                if (proxy == null) {
+                    log.error("Для записи с id = {} не найден подходящий прокси", objectId);
+                    continue;
+                }
                 if (verifySignature(signatureService, dataToSend,
                         new String(document.getString("signature")))) {
 
