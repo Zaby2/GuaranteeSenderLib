@@ -266,6 +266,7 @@ guarantee:
 3. Для каждого `sender` необходимо создать `BalancingProvider`, установить имя, вес.
    
   - Пример:
+    
   <img width="756" height="344" alt="image" src="https://github.com/user-attachments/assets/b37d6bc3-1ed9-41f8-af61-0a45145cf3e5" />
   
   - Важно отметить, что атрибут веса для http указывается на уровне `BalancingProvider` и используется для балансировки нагрузки между хостами.
@@ -282,12 +283,15 @@ guarantee:
   Например, если у SQL-группы вес меньше, чем у NoSQL-группы, то временным хранилищем будет выступать NoSQL-группа, а в случае её недоступности основным буфером станет SQL-группа.
   
   Пример:
+  
   <img width="523" height="180" alt="image" src="https://github.com/user-attachments/assets/35316b74-1369-4a09-9d29-20ac23466e2f" />
   
 5. Необходимо создать сервис для подписания ЭЦП - `SignatureService`, передав в конструктор либо `JksKeyStoreProvider`, либо `PemKeyStoreProvider` в зависимости от типа используемых сертификатов `JKS` или `PEM` соответсвенно.
    
   Пример:
+  
   <img width="565" height="161" alt="image" src="https://github.com/user-attachments/assets/b0b822c4-7f56-49e3-a523-d5c84a0bd785" />
+  
 6. Следующим шагом создается `GuaranteeSenderConfiguration`, который содержит в себе все `BalancingGroupConfiguration` списком и `SignatureService`. Также на этом уровне задается конфигурация CircuitBreaker - `CircuitBreakerConfiguration`, в параметры принмиает кол-во ошибок, до переходав `OPEN` и параметр времени перехода в `HALF_OPEN`. 
 
 Пример:
