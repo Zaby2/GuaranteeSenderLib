@@ -2,6 +2,8 @@ package ru.bsh.guarantee.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.Date;
 
@@ -13,7 +15,8 @@ public class SqlGuaranteeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "signature")
+    @Lob
+    @Column(name = "signature", length = 16777215)
     private byte[] signature;
     private String requestValue;
     private String requestType;

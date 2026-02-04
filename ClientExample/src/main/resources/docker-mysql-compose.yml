@@ -1,0 +1,19 @@
+version: "3.8" # Используйте актуальную версию; 3.9 пока не существует для docker-compose
+
+services:
+  mysql:
+    image: mysql:8.0 # Указана актуальная версия MySQL
+    container_name: local-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: db1
+      MYSQL_USER: user
+      MYSQL_PASSWORD: 1234
+      MYSQL_ROOT_PASSWORD: 1234 # Обязательный параметр для MySQL
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
