@@ -298,6 +298,7 @@ guarantee:
 
 <img width="736" height="199" alt="image" src="https://github.com/user-attachments/assets/2e5178c2-fd0e-49e0-8b7e-8112ca1ba307" />
 
+
 7. Создается прокси - `GuaranteeSenderProxyImpl<?>`, параметризируется типом, который ожидается по контракту с http хостом. Принимает `GuaranteeSenderConfiguration`, `GuaranteeMonitoring`, `класс параметра`.
    
    - `GuaranteeMonitoring` - можно получить как бин контекста.
@@ -326,7 +327,9 @@ guarantee:
    2.3 В случае недоступности всех `BalancingProvider` в в `http` группе переход к шагу 3, иначе отправка считается успешной.
    
 3. Вызывается метод `sendToBuffer`
+   
    3.1 Данные подписываются ЭЦП в `SignatureService`
+   
    3.2 Начинается итерация по оставшимся `BalancingGroupConfiguration`(по указанному в группе весу), происходит итерация по  `BalancingProvider`, просходит попытка отправки. В случае успешной отправки процесс считается завершенным(переход в ## Puller workflow), иначе процеес считается ошибочным, отбрасывается критичиская метрика(проблема связана с инфраструктурой).
 
 ## Puller workFlow
