@@ -305,6 +305,10 @@ guarantee:
      
   Пример:
   <img width="836" height="172" alt="image" src="https://github.com/user-attachments/assets/3866a6ab-a500-48dc-928b-972b6343be45" />
+  
+Важно исключить из автоконфигурации классы:
+
+@EnableAutoConfiguration(exclude = {`DataSourceAutoConfiguration.class`, `MongoAutoConfiguration.class`})
 
 ## Использование 
 
