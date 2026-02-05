@@ -316,13 +316,13 @@ guarantee:
 
 ## WorkFlow
 
-1. `GuaranteeSenderProxyImpl<?>` - разделяет список `BalancingGroupConfiguration` на HTTP - main и остальные группы.
+1. `GuaranteeSenderProxyImpl<?>` - разделяет список `BalancingGroupConfiguration` на HTTP - main и остальные группы(по полю Type).
    
 2. Вызывается асинхронный метод `send`.
    
    2.1 Полученный запрос конвертируется во внутреннее DTO библиотеки - `GuaranteeSenderDto`
    
-   2.2 Происходит попытка отправки в `http` группу `BalancingGroupConfiguration`. Из нее выбирается `BalancingProvider`(с использованием балансировщика по весу - `WeightedLoadBalancer`), если он доступен в  `CircuitBreaker`, то происходит попытка отправки через `HttpSender`, иначе выбирается следующий `BalancingProvider`. При отправке в через  `HttpSender` происходит десериализация данных из `GuaranteeSenderDto` в тип, которым параметризирован соответсвующий  `GuaranteeSenderProxyImpl<?>`.
+   2.2 Происходит попытка отправки в `http` группу `BalancingGroupConfiguration`. Из нее выбирается `BalancingProvider`(с использованием балансировщика по весу - `WeightedLoadBalancer`), если он доступен в  `CircuitBreaker`, то происходит попытка отправки через `HttpSender`, иначе выбирается следующий `BalancingProvider`. При отправке в через `HttpSender` происходит десериализация данных из `GuaranteeSenderDto` в тип, которым параметризирован соответсвующий  `GuaranteeSenderProxyImpl<?>`.
    
    2.3 В случае недоступности всех `BalancingProvider` в в `http` группе переход к шагу 3, иначе отправка считается успешной.
    
@@ -332,8 +332,20 @@ guarantee:
    
    3.2 Начинается итерация по оставшимся `BalancingGroupConfiguration`(по указанному в группе весу), происходит итерация по  `BalancingProvider`, просходит попытка отправки. В случае успешной отправки процесс считается завершенным(переход в ## Puller workflow), иначе процеес считается ошибочным, отбрасывается критичиская метрика(проблема связана с инфраструктурой).
 
+   3.3 Запись сохраняетя в буфер:
+
+   Пример:
+
+
+| id | createdAt                  | isSent         | polledAt | requestType        | requestValue | signature                                                                                                                                                     
+|  2 | 2026-02-05 10:58:54.467000 | 0x00           | NULL     | ru.bsh.dto.Request | {"id":1}     | <siganture> |
+
+Здесь `requestType` - тип, в который будет десериализована запись при передаче в `HttpSender`. 
+Сама запись имеет структуру `GuaranteeSenderDto`.
+
+
 ## Puller workFlow
-Puller-классы отвечают за получение ранее сохраненных данных из буфера(п 3.2 EorkFlow) и их повторную доотправку. 
+Puller-классы отвечают за получение ранее сохраненных данных из буфера(п 3.2 WorkFlow) и их повторную доотправку. 
 Классы конфигурации `puller`: 
 
 - `SqlPullProcessorConfiguration`
