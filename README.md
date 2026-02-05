@@ -310,6 +310,33 @@ guarantee:
 
 @EnableAutoConfiguration(exclude = {`DataSourceAutoConfiguration.class`, `MongoAutoConfiguration.class`})
 
+
+!!!! Библиотека поддерживает использование нескольких MongoDb и нескольких Sql Бд
+Для это в `SQL` конфигурации в `applicatiion.yaml` в разделе `guarantee.sql.sender.properties-map` задаются блоки:
+
+```yaml
+properties-map:
+  db1:
+    url: jdbc:mysql://localhost:3306/db1
+    user-name: user
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  db2:
+    url: jdbc:mysql://localhost:3306/db2
+    user-name: user
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+```
+В `NoSql` конфигурации задются в g`uarantee.nosql.mongo.sender.connections` задаются блоки: 
+
+```yaml
+  connections:
+    db1: mongodb://user:1234@localhost:27017/?authSource=admin
+    db2: mongodb://user:1234@localhost:27017/?authSource=admin
+```
+
+`Ключ(db1/db2)` должен совпадать с названием существующей в буфере БД.
+
 ## Использование 
 
 Для использования достаточно в точке отправки клиентского приложения получить бин `GuaranteeSenderProxyImpl<?>` и вызвать метод `send`, передав запрос, которым параметризирован прокси. 
@@ -385,7 +412,6 @@ Cleaner-классы отвечают за удаление отправленн
 1. В соответствии с заданным расписанием `CRON ` выполняются запросы к буферу на удаление записей, имеющих пометку `isSend` = true.
 
   
-
 
 
 
