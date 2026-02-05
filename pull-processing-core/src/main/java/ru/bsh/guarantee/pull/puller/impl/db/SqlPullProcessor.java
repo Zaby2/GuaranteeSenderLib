@@ -5,11 +5,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.bsh.GuaranteeSenderProxyImpl;
+import ru.bsh.guarantee.entity.SqlGuaranteeEntity;
 import ru.bsh.guarantee.monitoring.GuaranteeMonitoring;
 import ru.bsh.guarantee.pull.configuration.db.SqlPullProcessorConfiguration;
 import ru.bsh.guarantee.pull.converter.GuaranteeSenderEntityToDtoConverter;
 import ru.bsh.guarantee.pull.puller.PullProcessor;
+import ru.bsh.guarantee.pull.transaction.TransactionalOperator;
 import ru.bsh.guarantee.repository.GuaranteeJpaRepository;
 import ru.bsh.guarantee.sender.configuration.sql.DbContext;
 import service.SignatureService;
@@ -36,6 +39,7 @@ public class SqlPullProcessor implements PullProcessor {
     private final SignatureService signatureService;
     private final GuaranteeJpaRepository repository;
     private final GuaranteeMonitoring monitoring;
+    private final TransactionalOperator transactionalOperator;
 
     private final ReentrantLock lock = new ReentrantLock();
     private final GuaranteeSenderEntityToDtoConverter converter = new GuaranteeSenderEntityToDtoConverter();
@@ -46,11 +50,13 @@ public class SqlPullProcessor implements PullProcessor {
                             List<GuaranteeSenderProxyImpl<?>> proxy,
                             SignatureService signatureService,
                             GuaranteeJpaRepository repository,
-                            GuaranteeMonitoring monitoring) {
+                            GuaranteeMonitoring monitoring,
+                            TransactionalOperator transactionalOperator) {
         this.configuration = configuration;
         this.signatureService = signatureService;
         this.repository = repository;
         this.monitoring = monitoring;
+        this.transactionalOperator = transactionalOperator;
 
         var map = new HashMap<String, GuaranteeSenderProxyImpl<?>>();
         proxy.forEach(p -> map.put(p.getPlayLoadType().getName(), p));
@@ -66,8 +72,7 @@ public class SqlPullProcessor implements PullProcessor {
         var destinations = configuration.getDestinations();
         try {
             DbContext.set(destinations.get(currentDataSourceIndex));
-            var entities = repository.findDataToSend(
-                    PageRequest.of(0, configuration.getReadLimit()));
+            var entities = transactionalOperator.getEntities();
 
             for (var entity : entities) {
                 var dataToSend = converter.convert(entity);

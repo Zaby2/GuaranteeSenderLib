@@ -15,9 +15,10 @@ public class SqlGuaranteeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Lob
-    @Column(name = "signature", length = 16777215)
+
+    @Column(name = "signature")
     private byte[] signature;
+
     private String requestValue;
     private String requestType;
     private Date createdAt;

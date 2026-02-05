@@ -3,14 +3,12 @@ package ru.bsh.guarantee.pull.cleaner.sql;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import ru.bsh.guarantee.monitoring.GuaranteeMonitoring;
 import ru.bsh.guarantee.pull.cleaner.CleanProcessor;
 import ru.bsh.guarantee.pull.configuration.db.SqlPullProcessorConfiguration;
-import ru.bsh.guarantee.repository.GuaranteeJpaRepository;
+import ru.bsh.guarantee.pull.transaction.TransactionalOperator;
 import ru.bsh.guarantee.sender.configuration.sql.DbContext;
 
 import java.util.concurrent.locks.ReentrantLock;
@@ -25,8 +23,8 @@ import static ru.bsh.guarantee.pull.utils.Utils.determineCurrentIndex;
 public class SqlCleanProcessor implements CleanProcessor {
 
     private final SqlPullProcessorConfiguration configuration;
-    private final GuaranteeJpaRepository repository;
     private final GuaranteeMonitoring monitoring;
+    private final TransactionalOperator transactionalOperator;
 
     private final ReentrantLock lock = new ReentrantLock();
 
@@ -34,7 +32,6 @@ public class SqlCleanProcessor implements CleanProcessor {
 
     @Override
     @Scheduled(cron = "${guarantee.sql.cleaner.cron}")
-    @Transactional
     public void clean() {
         if (!lock.tryLock()) {
             return;
@@ -45,9 +42,7 @@ public class SqlCleanProcessor implements CleanProcessor {
         DbContext.set(currentDestination);
 
         try {
-            var result = repository.findTopSentIdsOrderByCreatedAtAsc(
-                    PageRequest.of(0, configuration.getCleanLimit()));
-            repository.deleteByIdIn(result);
+            var result = transactionalOperator.deleteEntities();
 
             monitoring.success(SQL_CLEANER.getLayer(), SQL_CLEANER.getOperation());
             log.info("Удалено {} записей из SQL {}", result, currentDestination);

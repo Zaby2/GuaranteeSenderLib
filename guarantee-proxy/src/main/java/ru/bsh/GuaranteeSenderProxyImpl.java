@@ -40,7 +40,7 @@ public class GuaranteeSenderProxyImpl<T> implements GuaranteeSenderProxy<T> {
     @Getter
     private final Class<T> playLoadType;
 
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
     private final GuaranteeSenderDtoConverter<T> converter = new GuaranteeSenderDtoConverter<>();
 
     public GuaranteeSenderProxyImpl(GuaranteeSenderConfiguration configuration,

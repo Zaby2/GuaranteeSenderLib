@@ -51,7 +51,7 @@ public class SqlSenderConfiguration {
         emf.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
         var jpaProps = new HashMap<String, Object>();
-        jpaProps.put("hibernate.hbm2ddl.auto", "update");
+        jpaProps.put("hibernate.hbm2ddl.auto", "none");
         jpaProps.put("hibernate.show_sql", false);
         jpaProps.put("hibernate.format_sql", true);
 
