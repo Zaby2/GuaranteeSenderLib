@@ -13,7 +13,7 @@ public interface GuaranteeJpaRepository extends JpaRepository<SqlGuaranteeEntity
             select *
             from guarantee_data g
             where g.isSent = false
-            order by g.createdAt DESC
+            order by g.createdAt ASC
             LIMIT :limit
             """, nativeQuery = true)
     List<SqlGuaranteeEntity> findDataToSend(@Param("limit") int limit);

@@ -45,7 +45,7 @@ public class SqlSender implements GuaranteeSender {
                 repository.save(Objects.requireNonNull(converter.convert(dataToSend)));
                 isSend = true;
                 monitoring.success(SQL_SENDER.getLayer(), SQL_SENDER.getOperation());
-                log.info("Отпарвка в SQL БД {} завершилась успешно", DbContext.get());
+                log.info("Отправка в SQL БД {} завершилась успешно", DbContext.get());
                 break;
             } catch (Exception e) {
                 monitoring.fail(SQL_SENDER.getLayer(), SQL_SENDER.getOperation());

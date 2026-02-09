@@ -70,7 +70,7 @@ public class MongoPullProcessor implements PullProcessor {
 
             var iterableData = collection
                     .find(Filters.eq("isSent", false))
-                    .sort(Sorts.descending("createdAt"))
+                    .sort(Sorts.ascending("createdAt"))
                     .limit(configuration.getReadLimit());
             for (var document : iterableData) {
                 var dataToSend = converter.convert(document);

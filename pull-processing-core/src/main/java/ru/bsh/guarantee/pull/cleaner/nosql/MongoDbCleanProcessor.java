@@ -46,7 +46,7 @@ public class MongoDbCleanProcessor implements CleanProcessor {
 
             var idsToDelete = new ArrayList<>();
             for (var document : collection.find(Filters.eq("isSent", true))
-                    .sort(Sorts.descending("createdAt"))
+                    .sort(Sorts.ascending("createdAt"))
                     .limit(configuration.getCleanLimit())) {
                 idsToDelete.add(document.getObjectId("_id"));
             }
