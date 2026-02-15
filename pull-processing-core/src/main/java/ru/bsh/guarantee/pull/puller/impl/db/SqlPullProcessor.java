@@ -86,13 +86,13 @@ public class SqlPullProcessor implements PullProcessor {
 
                     log.info("Запись с id = {} прошла проверку ЭЦП", entity.getId());
                     proxy.send(dataToSend);
-                    entity.setPolledAt(new Date());
-                    entity.setIsSent(true);
-                    repository.save(entity);
                 } else {
                     monitoring.fail(SIGNATURE_CHECK.getLayer(), SIGNATURE_CHECK.getOperation());
                     log.error("Запись с id = {} не прошла проверку ЭЦП", entity.getId());
                 }
+                entity.setPolledAt(new Date());
+                entity.setIsSent(true);
+                repository.save(entity);
             }
             monitoring.success(SQL_PULLER.getLayer(), SQL_PULLER.getOperation());
         } catch (Exception e) {

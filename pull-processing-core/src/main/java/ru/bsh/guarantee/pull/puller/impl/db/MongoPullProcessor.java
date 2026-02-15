@@ -82,20 +82,18 @@ public class MongoPullProcessor implements PullProcessor {
                 }
                 if (verifySignature(signatureService, dataToSend,
                         new String(document.getString("signature")))) {
-
                     log.info("Запись с id = {} прошла проверку ЭЦП", objectId);
                     proxy.send(dataToSend);
-
-                    collection.updateOne(
-                            Filters.eq("_id", objectId),
-                            Updates.combine(Updates.set("isSent", true),
-                                    Updates.set("polledAt", new Date()))
-                    );
                     monitoring.success(NO_SQL_PULLER.getLayer(), NO_SQL_PULLER.getOperation());
                 } else {
                     monitoring.fail(SIGNATURE_CHECK.getLayer(), SIGNATURE_CHECK.getOperation());
                     log.error("Запись с id = {} не прошла проверку ЭЦП", objectId);
                 }
+                collection.updateOne(
+                        Filters.eq("_id", objectId),
+                        Updates.combine(Updates.set("isSent", true),
+                                Updates.set("polledAt", new Date()))
+                );
             }
         } catch (Exception e) {
             monitoring.fail(NO_SQL_PULLER.getLayer(), NO_SQL_PULLER.getOperation());
