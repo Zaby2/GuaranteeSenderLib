@@ -7,22 +7,30 @@ management:
     tags:
       application: my-app
 guarantee:
+  signature:
+    pem: true
+    keyPath: "key.pem"
+    certPath: "cert.pem"
   nosql:
-    enabled: false
+    enabled: true
     mongo:
+      groupName: BogdanNoSql
+      weight: 10
       sender:
         connections:
           db1: mongodb://user:1234@localhost:27017/?authSource=admin
       puller:
         limit: 5
-        cron: "0 15 10 * * ?"
-        #cron: "*/30 * * * * ?"
+        #cron: "0 15 10 * * ?"
+        cron: "*/30 * * * * ?"
       cleaner:
         limit: 5
         cron: "*/15 * * * * ?"
         #cron: "0 15 10 * * ?"
   sql:
     enabled: true
+    groupName: BogdanSql
+    weight: 5
     sender:
       properties-map:
         db1:
@@ -30,16 +38,23 @@ guarantee:
           user-name: user
           password: 1234
           driver-class-name: org.postgresql.Driver
+        db2:
+          url: jdbc:mysql://localhost:3306/db2
+          user-name: user
+          password: 1234
+          driver-class-name: com.mysql.cj.jdbc.Driver
     puller:
       limit: 10
       #cron: "0 15 10 * * ?"
       cron: "*/35 * * * * ?"
     cleaner:
       limit: 5
-      #cron: "*/10 * * * * ?"
-      cron: "0 15 10 * * ?"
+      cron: "*/10 * * * * ?"
+      #cron: "0 15 10 * * ?"
   kafka:
-    enabled: true
+    enabled: false
+    groupName: BogdanKafka
+    weight: 15
     sender:
       topic: test-topic
       bootstrap-servers: localhost:9092
@@ -60,25 +75,30 @@ guarantee:
       auto-offset-reset: earliest
       enable-auto-commit: false
       max-poll-records: 100
-  http1:
-    url: http://localhost:8081/test
-    headersMap:
-      Accept: "application/json"
-    retryConfiguration:
-      exceptionsMap:
-        org.springframework.web.client.HttpServerErrorException: true
-      maxAttempts: 3
-      initialInterval: 5
-      intervalMultiplier: 5
-      maxInterval: 100
-  http2:
-    url: http://localhost:8081/test/2
-    headersMap:
-      Accept: "application/json"
-    retryConfiguration:
-      exceptionsMap:
-        org.springframework.web.client.HttpServerErrorException: true
-      maxAttempts: 3
-      initialInterval: 5
-      intervalMultiplier: 5
-      maxInterval: 100
+  http:
+    groupName: BogdanHttp
+    configurations:
+      http1:
+        weight: 1
+        url: http://localhost:8081/test
+        headersMap:
+          Accept: "application/json"
+        retryConfiguration:
+          exceptionsMap:
+            org.springframework.web.client.HttpServerErrorException: true
+          maxAttempts: 3
+          initialInterval: 5
+          intervalMultiplier: 5
+          maxInterval: 100
+      http2:
+        weight: 2
+        url: http://localhost:8081/test/2
+        headersMap:
+          Accept: "application/json"
+        retryConfiguration:
+          exceptionsMap:
+            org.springframework.web.client.HttpServerErrorException: true
+          maxAttempts: 3
+          initialInterval: 5
+          intervalMultiplier: 5
+          maxInterval: 100

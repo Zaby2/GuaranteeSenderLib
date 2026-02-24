@@ -1,5 +1,6 @@
-package ru.bsh.configuration;
+package ru.bsh.guarantee.configuration;
 
+import lombok.Data;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +15,12 @@ import java.util.List;
 
 @Configuration
 @ConditionalOnProperty(name = "guarantee.nosql.enabled", havingValue = "true")
-public class MongoTestConfiguration {
+@ConfigurationProperties("guarantee.nosql.mongo")
+@Data
+public class MongoConfiguration {
+
+    private String groupName;
+    private Long weight;
 
     @Bean
     @ConfigurationProperties(prefix = "guarantee.nosql.mongo.sender")
@@ -25,15 +31,15 @@ public class MongoTestConfiguration {
     @Bean("mongoGroup")
     public BalancingGroupConfiguration mongoBalancingGroupConfiguration(MongoDbSender mongoDbSender) {
         var mongoProvider = new BalancingProvider();
-        mongoProvider.setName("MONGO-1");
+        mongoProvider.setName(groupName);
         mongoProvider.setSender(mongoDbSender);
-        mongoProvider.setWeight(15L);
+        mongoProvider.setWeight(weight);
 
         var mongoConf = new BalancingGroupConfiguration();
-        mongoConf.setName("Mongo Sender");
+        mongoConf.setName(groupName);
         mongoConf.setType(BufferType.NOSQL);
         mongoConf.setProvider(List.of(mongoProvider));
-        mongoConf.setWeight(4);
+        mongoConf.setWeight(Math.toIntExact(weight));
         return mongoConf;
     }
 }

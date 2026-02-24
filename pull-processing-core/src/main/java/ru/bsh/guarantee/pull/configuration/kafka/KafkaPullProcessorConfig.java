@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import ru.bsh.guarantee.dto.GuaranteeSenderDto;
-import ru.bsh.guarantee.pull.dto.KafkaPullProcessorConfigDto;
+import ru.bsh.guarantee.dto.KafkaPullProcessorConfigDto;
 
 import java.util.Properties;
 

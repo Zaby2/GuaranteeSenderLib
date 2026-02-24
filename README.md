@@ -411,13 +411,135 @@ Cleaner-классы отвечают за удаление отправленн
 
 1. В соответствии с заданным расписанием `CRON ` выполняются запросы к буферу на удаление записей, имеющих пометку `isSend` = true.
 
-  
+ ### PATCH 
+Цель обновления - упростить клиентское взаимодействие с библиотекой. Клиенту незачем знать о внутренних структурах библиотеки при использвоании стандартной реализации,
+поэтмоу было принято решение созадть автоконфигурацию для проекта 
 
+## Что нужно сделать теперь? 
 
-
+1. Цель отправить данные серверу по `REST` -> конфигурируем точки отправки для `HTTP` взаимодействий:
+Делается хто исключительно средствами `yaml`
+```yaml
+  guarantee.http:
+    groupName: BogdanHttp # Имя группы, задается для удобного отоброжения в логах
+    configurations:
+      http1: # Этот ключ используется для именования точек отправки в логах
+        weight: 1 # вес используется для балансировки нагрузки, если указано несколько хостов, например в данном случае между http1 и http2
+        url: http://localhost:8081/test
+        headersMap:
+          Accept: "application/json"
+        retryConfiguration: # Тут задается конфигурация повтороных вызовов 
+          exceptionsMap:
+            org.springframework.web.client.HttpServerErrorException: true
+          maxAttempts: 3
+          initialInterval: 5
+          intervalMultiplier: 5
+          maxInterval: 100
+      http2:
+        weight: 2
+        url: http://localhost:8081/test/2
+        headersMap:
+          Accept: "application/json"
+        retryConfiguration:
+          exceptionsMap:
+            org.springframework.web.client.HttpServerErrorException: true
+          maxAttempts: 3
+          initialInterval: 5
+          intervalMultiplier: 5
+          maxInterval: 100
+```
+Таким образом, при добавлении данной конфигурации будет происходить попытка отправки в http1 и http2 до первой успешной
    
+2. Определяемся с выбором буфера. По умолчанию доступны `SQL`, `MONGO`, `KAFKA`.
+    a. Для испоользования `SQL` аналогично достаточно обычного yaml:
 
+```yaml
+  guarantee.sql:
+    enabled: true # флаг включения(по умолчанию выключена)
+    groupName: BogdanSql # Имя группы, задается для удобного отоброжения в логах
+    weight: 5 # Вес группы используется для приоритезации все группы буферов
+    sender: # В sender аналогично можно задать несколько точек отправки, в данном случае это db1 и db2
+      properties-map: # Можно указать одну БД, указывать несколько только в случае необходимости
+        db1:
+          url: jdbc:postgresql://localhost:5432/db1
+          user-name: user
+          password: 1234
+          driver-class-name: org.postgresql.Driver
+        db2:
+          url: jdbc:mysql://localhost:3306/db2
+          user-name: user
+          password: 1234
+          driver-class-name: com.mysql.cj.jdbc.Driver
+    puller: # Конфинурация повторной отправки, в фоне вычитываются данные из db1/db2 и пытаются доотправиться через http1/http2
+      limit: 10 # Кол-во записей получаемых за один раз
+      cron: "*/35 * * * * ?"
+    cleaner: # Конфигурация для фонового удаления ранее отправленных данных
+      limit: 5
+      cron: "*/10 * * * * ?"
+```
+Таким образом, используя эту конфигурацию и конфигурацию из п.1 - В случае недостпуности `http1` и `http2` данные будут помещеные в `db1` или `db2`
+А затем в соответствии с  `puller.cron` будет совершена повторная попытка отправки в `http1` или `http2`
+    b. Для испоользования `MONGO` аналогично достаточно обычного yaml. Если мы не хотим/не имеем возможности использовать SQL, можно выбрать этот вариант
+```yaml
+guarantee:
+  nosql:
+    enabled: true
+    mongo:
+      groupName: BogdanNoSql
+      weight: 10
+      sender:
+        connections: # Можно использовать как одно, так и несколько подклбчений
+          db1: mongodb://user:1234@localhost:27017/?authSource=admin
+          db2: mongodb://user:1234@localhost:27017/?authSource=admin
+      puller:
+        limit: 5
+        cron: "*/30 * * * * ?"
+      cleaner:
+        limit: 5
+        cron: "*/15 * * * * ?"
+```
+Аналогично SQL в этом случае при недоступности `http1` и `http2` данные будут помещеные в `db1` или `db2`
+    с. Аналогично заполняется конфигурация для Kafka:
+```yaml
+guarantee.kafka:
+    enabled: false
+    groupName: BogdanKafka
+    weight: 15
+    sender:
+      topic: test-topic
+      bootstrap-servers: localhost:9092
+      client-id: main-producer
+      acks: 0
+      max-retries: 1
+      rq-timeout-ms: 10000
+      delivery-timeout-ms: 10000
+    puller:
+      durationSec: "10"
+      cron: "*/10 * * * * ?"
+      topic: test-topic
+      bootstrap-servers: localhost:9092
+      group-id: main-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 100
+```
 
+3. Теперь, когда сконфигурирован главный транспорт(Http группа) и временный буфер/несколько буферов
+Необходимо сделать импорт в свой класс конфигурации `@Import(GuaranteeAutoConfiguration.class)`
+4. Далее заполним клиентскую конфигурацию 
+    a. Создаем сервси подписания данных ЭЦП аналогичным образом создается черерз `yaml`:
+```yaml
+guarantee:
+  signature:
+    pem: true # или jks: true 
+    keyPath: "key.pem" # путь до серта и ключа
+    certPath: "cert.pem"
+```
+ b. Создаем непосредственно прокси-бины и финальную конфигурацию к ним 
+ ![Снимок экрана 2026-02-24 в 23.18.56.png](../../Desktop/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202026-02-24%20%D0%B2%2023.18.56.png)
+ 
+Далее можно пользоваться `GuaranteeSenderProxyImpl`, данные не потеряются!
 
-
-
+Библиотека поддерживает создание нескольких `GuaranteeSenderProxyImpl`, однако конфигурация групп для них(в случае если есть отличия) остается клиенту.

@@ -1,4 +1,4 @@
-package ru.bsh.guarantee.pull.dto;
+package ru.bsh.guarantee.dto;
 
 import lombok.Data;
 

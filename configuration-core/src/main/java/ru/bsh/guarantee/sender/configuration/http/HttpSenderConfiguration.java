@@ -13,6 +13,7 @@ public class HttpSenderConfiguration {
     private Map<String, String> headersMap;
     private RetryConfiguration retryConfiguration;
     private HttpHeaders headers;
+    private Long weight;
 
     public HttpHeaders getHeaders() {
         if (headers != null) {
