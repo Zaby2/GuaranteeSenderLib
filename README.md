@@ -247,96 +247,6 @@ guarantee:
 - **MONGO**: `MongoSenderDto`
 - **KAFKA**: `KafkaSenderProperties`, `KafkaPullProcessorConfigDto`
 
-Параметры можно заполнить, используя `@ConfigurationProperties`. Например:
-<img width="758" height="92" alt="image" src="https://github.com/user-attachments/assets/9b968cdb-178e-4458-a2cc-9dd5cf15cff1" />
-
-## Инструкция по конфигурации
-
-1. Первым шагом необходимо создать указанные выше классы, с учетом выбранного буфера(Параметр guarantee."---bufferType---".enabled) и обязательно `HttpSenderConfiguration`.
-Назначение параметров можно посмотреть в таблице выше.
-Пример:
-<img width="942" height="180" alt="image" src="https://github.com/user-attachments/assets/3720b367-c3fe-4ed2-84b9-337ad61ed859" />
-
-2. Создаются классы, отвечающие за отправку по целевому транспорту:
-   - `HttpSender` — создается вручную
-   - `KafkaSender` — можно получить как бин контекста
-   - `MongoDbSender` — можно получить как бин контекста
-   - `SqlSender` — можно получить как бин контекста
-
-3. Для каждого `sender` необходимо создать `BalancingProvider`, установить имя, вес.
-   
-  - Пример:
-    
-  <img width="756" height="344" alt="image" src="https://github.com/user-attachments/assets/b37d6bc3-1ed9-41f8-af61-0a45145cf3e5" />
-  
-  - Важно отметить, что атрибут веса для http указывается на уровне `BalancingProvider` и используется для балансировки нагрузки между хостами.
-    
-4. Классы `BalancingProvider` объединяются в `BalancingGroupConfiguration` по типу отправки(Http, Broker, Sql, NoSql):
-   
-  Таким образом, структура выглядит:
-  
-  <img width="981" height="475" alt="image" src="https://github.com/user-attachments/assets/d874cd4f-d22b-4560-a416-65230f192252" />
-  
- - У `BalancingGroupConfiguration` также можно установить атрибуты: имя, обязательно установить атрибут типа (в соответствии с транспортом) и указать вес.
-   
-- Важно отметить, что атрибут веса для буферов (`Broker`, `Sql`, `NoSql`) указывается на уровне `BalancingGroupConfiguration` и используется для выставления приоритета временного хранилища (буфера).  
-  Например, если у SQL-группы вес меньше, чем у NoSQL-группы, то временным хранилищем будет выступать NoSQL-группа, а в случае её недоступности основным буфером станет SQL-группа.
-  
-  Пример:
-  
-  <img width="523" height="180" alt="image" src="https://github.com/user-attachments/assets/35316b74-1369-4a09-9d29-20ac23466e2f" />
-  
-5. Необходимо создать сервис для подписания ЭЦП - `SignatureService`, передав в конструктор либо `JksKeyStoreProvider`, либо `PemKeyStoreProvider` в зависимости от типа используемых сертификатов `JKS` или `PEM` соответсвенно.
-   
-  Пример:
-  
-  <img width="565" height="161" alt="image" src="https://github.com/user-attachments/assets/b0b822c4-7f56-49e3-a523-d5c84a0bd785" />
-  
-6. Следующим шагом создается `GuaranteeSenderConfiguration`, который содержит в себе все `BalancingGroupConfiguration` списком и `SignatureService`. Также на этом уровне задается конфигурация CircuitBreaker - `CircuitBreakerConfiguration`, в параметры принмиает кол-во ошибок, до переходав `OPEN` и параметр времени перехода в `HALF_OPEN`. 
-
-Пример:
-
-<img width="736" height="199" alt="image" src="https://github.com/user-attachments/assets/2e5178c2-fd0e-49e0-8b7e-8112ca1ba307" />
-
-
-7. Создается прокси - `GuaranteeSenderProxyImpl<?>`, параметризируется типом, который ожидается по контракту с http хостом. Принимает `GuaranteeSenderConfiguration`, `GuaranteeMonitoring`, `класс параметра`.
-   
-   - `GuaranteeMonitoring` - можно получить как бин контекста.
-     
-  Пример:
-  <img width="836" height="172" alt="image" src="https://github.com/user-attachments/assets/3866a6ab-a500-48dc-928b-972b6343be45" />
-  
-Важно исключить из автоконфигурации классы:
-
-@EnableAutoConfiguration(exclude = {`DataSourceAutoConfiguration.class`, `MongoAutoConfiguration.class`})
-
-
-!!!! Библиотека поддерживает использование нескольких MongoDb и нескольких Sql Бд
-Для это в `SQL` конфигурации в `applicatiion.yaml` в разделе `guarantee.sql.sender.properties-map` задаются блоки:
-
-```yaml
-properties-map:
-  db1:
-    url: jdbc:mysql://localhost:3306/db1
-    user-name: user
-    password: 1234
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  db2:
-    url: jdbc:mysql://localhost:3306/db2
-    user-name: user
-    password: 1234
-    driver-class-name: com.mysql.cj.jdbc.Driver
-```
-В `NoSql` конфигурации задются в g`uarantee.nosql.mongo.sender.connections` задаются блоки: 
-
-```yaml
-  connections:
-    db1: mongodb://user:1234@localhost:27017/?authSource=admin
-    db2: mongodb://user:1234@localhost:27017/?authSource=admin
-```
-
-`Ключ(db1/db2)` должен совпадать с названием существующей в буфере БД.
-
 ## Использование 
 
 Для использования достаточно в точке отправки клиентского приложения получить бин `GuaranteeSenderProxyImpl<?>` и вызвать метод `send`, передав запрос, которым параметризирован прокси. 
@@ -418,7 +328,8 @@ Cleaner-классы отвечают за удаление отправленн
 ## Что нужно сделать теперь? 
 
 1. Цель отправить данные серверу по `REST` -> конфигурируем точки отправки для `HTTP` взаимодействий:
-Делается хто исключительно средствами `yaml`
+Делается это исключительно средствами `yaml`
+
 ```yaml
   guarantee.http:
     groupName: BogdanHttp # Имя группы, задается для удобного отоброжения в логах
@@ -448,9 +359,12 @@ Cleaner-классы отвечают за удаление отправленн
           intervalMultiplier: 5
           maxInterval: 100
 ```
+
 Таким образом, при добавлении данной конфигурации будет происходить попытка отправки в http1 и http2 до первой успешной
+
    
 2. Определяемся с выбором буфера. По умолчанию доступны `SQL`, `MONGO`, `KAFKA`.
+
     a. Для испоользования `SQL` аналогично достаточно обычного yaml:
 
 ```yaml
@@ -477,9 +391,12 @@ Cleaner-классы отвечают за удаление отправленн
       limit: 5
       cron: "*/10 * * * * ?"
 ```
+
 Таким образом, используя эту конфигурацию и конфигурацию из п.1 - В случае недостпуности `http1` и `http2` данные будут помещеные в `db1` или `db2`
 А затем в соответствии с  `puller.cron` будет совершена повторная попытка отправки в `http1` или `http2`
+
     b. Для испоользования `MONGO` аналогично достаточно обычного yaml. Если мы не хотим/не имеем возможности использовать SQL, можно выбрать этот вариант
+    
 ```yaml
 guarantee:
   nosql:
@@ -499,6 +416,7 @@ guarantee:
         cron: "*/15 * * * * ?"
 ```
 Аналогично SQL в этом случае при недоступности `http1` и `http2` данные будут помещеные в `db1` или `db2`
+
     с. Аналогично заполняется конфигурация для Kafka:
 ```yaml
 guarantee.kafka:
@@ -528,8 +446,11 @@ guarantee.kafka:
 
 3. Теперь, когда сконфигурирован главный транспорт(Http группа) и временный буфер/несколько буферов
 Необходимо сделать импорт в свой класс конфигурации `@Import(GuaranteeAutoConfiguration.class)`
-4. Далее заполним клиентскую конфигурацию 
+
+4. Далее заполним клиентскую конфигурацию
+   
     a. Создаем сервси подписания данных ЭЦП аналогичным образом создается черерз `yaml`:
+   
 ```yaml
 guarantee:
   signature:
@@ -537,6 +458,7 @@ guarantee:
     keyPath: "key.pem" # путь до серта и ключа
     certPath: "cert.pem"
 ```
+
  b. Создаем непосредственно прокси-бины и финальную конфигурацию к ним 
  ![Снимок экрана 2026-02-24 в 23.18.56.png](../../Desktop/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202026-02-24%20%D0%B2%2023.18.56.png)
  
