@@ -12,7 +12,7 @@ guarantee:
     keyPath: "key.pem"
     certPath: "cert.pem"
   nosql:
-    enabled: true
+    enabled: false
     mongo:
       groupName: BogdanNoSql
       weight: 10
@@ -28,7 +28,7 @@ guarantee:
         cron: "*/15 * * * * ?"
         #cron: "0 15 10 * * ?"
   sql:
-    enabled: true
+    enabled: false
     groupName: BogdanSql
     weight: 5
     sender:
@@ -76,10 +76,14 @@ guarantee:
       enable-auto-commit: false
       max-poll-records: 100
   http:
+    connectTimeout: 2000
+    readTimeout: 2000
     groupName: BogdanHttp
     configurations:
       http1:
-        weight: 1
+        connectTimeout: 5000
+        readTimeout: 5000
+        weight: 20
         url: http://localhost:8081/test
         headersMap:
           Accept: "application/json"
@@ -91,7 +95,9 @@ guarantee:
           intervalMultiplier: 5
           maxInterval: 100
       http2:
-        weight: 2
+        connectTimeout: 5000
+        readTimeout: 5000
+        weight: 1
         url: http://localhost:8081/test/2
         headersMap:
           Accept: "application/json"

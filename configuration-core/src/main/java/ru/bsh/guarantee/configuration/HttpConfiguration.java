@@ -4,6 +4,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
 import ru.bsh.guarantee.balancing.BalancingGroupConfiguration;
 import ru.bsh.guarantee.balancing.BalancingProvider;
 import ru.bsh.guarantee.dto.BufferType;
@@ -30,7 +32,8 @@ public class HttpConfiguration {
                     var config = configurations.get(key);
                     var httpBalancingProvider = new BalancingProvider();
                     httpBalancingProvider.setName(key);
-                    httpBalancingProvider.setSender(new HttpSender(config, monitoring));
+                    httpBalancingProvider.setSender(new HttpSender(config, monitoring,
+                            buildRestTemplate(config.getConnectTimeout(), config.getReadTimeout())));
                     httpBalancingProvider.setWeight(config.getWeight());
                     return httpBalancingProvider;
                 }).toList();
@@ -39,5 +42,12 @@ public class HttpConfiguration {
         httpConf.setType(BufferType.HTTP);
         httpConf.setProvider(providers);
         return httpConf;
+    }
+
+    private RestTemplate buildRestTemplate(int connectTimeout, int readTimeout) {
+        var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(connectTimeout);
+        factory.setReadTimeout(readTimeout);
+        return new RestTemplate(factory);
     }
 }

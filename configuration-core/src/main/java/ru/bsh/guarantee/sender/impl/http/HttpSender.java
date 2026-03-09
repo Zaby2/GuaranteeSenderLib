@@ -24,14 +24,17 @@ public class HttpSender implements GuaranteeSender {
     private final HttpSenderConfiguration configuration;
     private final RetryTemplate retryTemplate;
     private final GuaranteeMonitoring monitoring;
+    private final RestTemplate restTemplate;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
 
-    public HttpSender(HttpSenderConfiguration configuration, GuaranteeMonitoring monitoring) {
+    public HttpSender(HttpSenderConfiguration configuration,
+                      GuaranteeMonitoring monitoring,
+                      RestTemplate restTemplate) {
         this.configuration = configuration;
         this.retryTemplate = buildRetryTemplate(configuration.getRetryConfiguration());
         this.monitoring = monitoring;
+        this.restTemplate = restTemplate;
     }
 
     @Override

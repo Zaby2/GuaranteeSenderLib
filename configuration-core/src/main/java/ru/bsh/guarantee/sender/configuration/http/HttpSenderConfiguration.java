@@ -14,6 +14,8 @@ public class HttpSenderConfiguration {
     private RetryConfiguration retryConfiguration;
     private HttpHeaders headers;
     private Long weight;
+    private Integer connectTimeout;
+    private Integer readTimeout;
 
     public HttpHeaders getHeaders() {
         if (headers != null) {
