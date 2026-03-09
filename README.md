@@ -336,6 +336,8 @@ Cleaner-классы отвечают за удаление отправленн
     configurations:
       http1: # Этот ключ используется для именования точек отправки в логах
         weight: 1 # вес используется для балансировки нагрузки, если указано несколько хостов, например в данном случае между http1 и http2
+        connectTimeout: 2000 # таймаут на подключение к http1
+        readTimeout: 2000 # таймаут на чтение для http1
         url: http://localhost:8081/test
         headersMap:
           Accept: "application/json"
@@ -347,6 +349,8 @@ Cleaner-классы отвечают за удаление отправленн
           intervalMultiplier: 5
           maxInterval: 100
       http2:
+        connectTimeout: 2000
+        readTimeout: 2000
         weight: 2
         url: http://localhost:8081/test/2
         headersMap:
@@ -460,7 +464,7 @@ guarantee:
 ```
 
  b. Создаем непосредственно прокси-бины и финальную конфигурацию к ним 
- ![Снимок экрана 2026-02-24 в 23.18.56.png](../../Desktop/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202026-02-24%20%D0%B2%2023.18.56.png)
+ <img width="809" height="653" alt="Снимок экрана 2026-03-09 в 21 09 52" src="https://github.com/user-attachments/assets/78feb438-2382-4167-a1d4-5161199460b1" />
 
 Здесь конфигурируется CircuitBreaker, для обеспечения отказоустойчивости, а также передается список всех точек взаимодействий определенных в yaml(все Http, Bufer группы)
 
